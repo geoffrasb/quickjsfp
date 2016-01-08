@@ -3,6 +3,7 @@
 
 function alterCtx(ctxs,f){
   //!ctxs is a list of objects
+  //!check overlaped existence of keys
 
   var fstr = "(function(){\n";
   for(var i=0;i<ctxs.length;i++){
@@ -39,7 +40,119 @@ function curryfree(f){
   F['_length'] = f._length;
   return F;
 }
+// ---------------------------------------------------------------------------------------------
 
+function exporting(/*args*/){
+  // args are type names, module names, record names
+  var expargs = arguments;
+  return function(expobj){
+    for(var i in expargs){
+      if(expargs[i]['_exported']!=null){ //expargs[i] is a module
+        // adding exported fields of the module to the incoming expobj
+        expargs[i]._exported.forEach(function(exportedThing){
+          expobj[exportedThing] = expargs[i][exportedThing];
+        });
+
+      }else if(expargs[i].intermediateDatatype == 'data'){
+        // adding constructors of the data to the incoming expobj
+        for(var x in expargs[i].constructors){
+          expobj[expargs[i].constructors[x][0]] = expargs[i].constructors[x][1];
+        }
+
+      }else if(expargs[i].intermediateDatatype == 'record'){
+        // adding getters of the record to the incoming expobj
+        expargs[i].getters.forEach(function(getterName){
+          expobj[getterName] = function(r){ return r[getterName]; }
+        });
+
+      }else{
+        console.log('error at exporting');
+      }
+    }
+    return expobj;
+    }
+  }
+}
+
+// intermediate data
+// data -> {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}
+// module -> {_exported:["xxx","yyy"], xxx :..., yyy:...}
+// record -> {intermediateDatatype:"record", getters:["f1","f2"]}
+
+// how constructors work?
+// making objects:{
+//   fromConstructor: Cons
+//   arguments: [x,xs]
+//   }
+
+// how pattern matching works
+// @ pattern
+// match("(x:xs)",data,function(){ ...x,....xs...})
+// record patterns
+// "R{a,b,c}"
+// "{a=x,b=y}"
+
+
+// how modules work?
+// basically, objects.
+
+// how records work?
+// records are objects
+// record name "R" can help make an object, but it's not necessary
+// but "R" itself contains accessor for the record
+
+
+
+
+function parseDecl(str){
+  // data T = c1/n1 | c2/n2
+}
+
+
+
+
+// decl intermediate data
+var declList = { decltype : "data"
+  , typename : "List"
+  , constructors : [["nil",0], ["cons",2]]
+}
+var declM = { decltype : "open"
+, quantifier : "M" //"" for no quantifier
+, contents : {f1:5, f2:10, f3:15}
+, hides : ["f1"]
+, renaming : [['f3','g3']]
+}
+var declR{ decltype : "record"
+, recordname : "R"
+, fields : ["f1","f2"]
+}
+function declToCtx(decl){
+  switch(decl.decltype){
+    case "data":
+      var res = {}
+      res[decl.typename] = ;//constructors for exporting
+      for(var i in decl.constructors){
+        var cnstrArity = decl.constructors[i][1];
+        var cnstrName = decl.constructors[i][0];
+        res[cnstrName] = ?;
+      }
+      return res;
+      break;
+
+
+
+
+    case "open":
+      break;
+
+
+
+
+    case "record":
+      break;
+    default: console.log("error at declToCtx");
+  }
+}
 
 function module(modname){
   //length of arguments should be at least one(modname),
@@ -51,10 +164,10 @@ function module(modname){
   var decls = arguments.slice(1,arguments.length);
   var modulebody = arguments[arguments.length-1];
 
-  var contexts = decls.map(parseDecl); 
+  var contexts = decls.map(function(x){ return declToCtx(parseDecl(x));}); 
   //a context :: a table of symbol to be used in the module body
 
- return alterCtx(contexts, modulebody)
+ return curryfree(alterCtx(contexts, modulebody));
 
 
 }
