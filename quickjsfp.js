@@ -91,7 +91,7 @@ function exporting(/*args*/){
 // how constructors work?
 // making objects:{
 //   fromConstructor: Cons
-//   arguments: [x,xs]
+//   args: [x,xs]
 //   }
 
 // how pattern matching works
@@ -142,17 +142,20 @@ function declToCtx(decl){
       // how constructors work?
       // making objects:{
       //   fromConstructor: Cons
-      //   arguments: [x,xs]
+      //   args: [x,xs]
       //   }
       // intermediate data
       // data -> {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}
+      res[decl.typename] = {intermediateDatatype:"data",constructors:[]};
+
       for(var i in decl.constructors){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
-        res[cnstrName] = eval('(function('
+        res[cnstrName] = curryfree(eval("(function("+genVars(cnstrArity).toString()+"){\n" +
+          "return { fromConstructor:"+cnstrName+"\n" +
+          ", args: arguments } })"));
+        res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
       }
-
-      res[decl.typename] = ;//constructors for exporting
       
       return res;
       break;
