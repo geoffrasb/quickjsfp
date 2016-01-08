@@ -1,7 +1,7 @@
 // to implement: module,exporting, lam, cases, lamcases
 // function constructed by lam can either be curried or noncurried
 
-function runwith(ctxs,f){
+function alterCtx(ctxs,f){
   //!ctxs is a list of objects
 
   var fstr = "(function(){\n";
@@ -54,7 +54,7 @@ function module(modname){
   var contexts = decls.map(parseDecl); 
   //a context :: a table of symbol to be used in the module body
 
- return runwith(contexts, modulebody)
+ return alterCtx(contexts, modulebody)
 
 
 }
