@@ -1,6 +1,7 @@
 // to implement: module,exporting, lam, cases, lamcases
 // function constructed by lam can either be curried or noncurried
 
+
 function genVars(n){
   //!n>=0
   var res = [];
@@ -103,7 +104,7 @@ function exporting(/*args*/){
 
 
 // how modules work?
-// basically, objects.
+// module -> {_exported:["xxx","yyy"], xxx :..., yyy:...}
 
 // how records work?
 // records are objects
@@ -162,8 +163,38 @@ function declToCtx(decl){
 
 
 
-
+// var declM = { decltype : "open"
+// , quantifier : "M" //"" for no quantifier
+// , contents : {f1:5, f2:10, f3:15}
+// , hides : ["f1"]
+// , renaming : [['f3','g3']]
+// }
     case "open":
+      var res = {};
+      var opening = res;
+      if(decl.quantifier != ""){
+        res[decl.quantifier] = {};
+        opening = res[decl.quantifier];
+      }
+      var in_hides_list = false;
+      var nameAltered = false;
+      var newName = "";
+      for(var k in decl.contents){
+        in_hides_list = decl.hides.reduce(function(b,x){ return(x==k)||b;},false);
+        if(!in_hides_list){
+          //setting nameAltered and newName
+          for(var i in decl.renaming){
+            if(decl.renaming[i][0] == k){
+              nameAltered = true;
+              newName = decl.renaming[i][1];
+              break;
+            }
+          }
+          opening[nameAltered? newName : k] = decl.contents[k];
+          nameAltered = false;
+        }
+      }
+      return res;
       break;
 
 
