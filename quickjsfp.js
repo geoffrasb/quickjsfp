@@ -121,21 +121,21 @@ function parseDecl(str){
 
 
 
-// decl intermediate data
-var declList = { decltype : "data"
-  , typename : "List"
-  , constructors : [["nil",0], ["cons",2]]
-}
-var declM = { decltype : "open"
-, quantifier : "M" //"" for no quantifier
-, contents : {f1:5, f2:10, f3:15}
-, hides : ["f1"]
-, renaming : [['f3','g3']]
-}
-var declR{ decltype : "record"
-, recordname : "R"
-, fields : ["f1","f2"]
-}
+// example decl intermediate data
+// var declList = { decltype : "data"
+//   , typename : "List"
+//   , constructors : [["nil",0], ["cons",2]]
+// }
+// var declM = { decltype : "open"
+// , quantifier : "M" //"" for no quantifier
+// , contents : {f1:5, f2:10, f3:15}
+// , hides : ["f1"]
+// , renaming : [['f3','g3']]
+// }
+// var declR = { decltype : "record"
+// , recordname : "R"
+// , fields : ["f1","f2"]
+// }
 function declToCtx(decl){
   switch(decl.decltype){
     case "data":
@@ -163,12 +163,12 @@ function declToCtx(decl){
 
 
 
-// var declM = { decltype : "open"
-// , quantifier : "M" //"" for no quantifier
-// , contents : {f1:5, f2:10, f3:15}
-// , hides : ["f1"]
-// , renaming : [['f3','g3']]
-// }
+    // var declM = { decltype : "open"
+    // , quantifier : "M" //"" for no quantifier
+    // , contents : {f1:5, f2:10, f3:15}
+    // , hides : ["f1"]
+    // , renaming : [['f3','g3']]
+    // }
     case "open":
       var res = {};
       var opening = res;
@@ -199,8 +199,19 @@ function declToCtx(decl){
 
 
 
-
+    // var declR{ decltype : "record"
+    // , recordname : "R"
+    // , fields : ["f1","f2"]
+    // }
+    // intermediate data
+    // record -> {intermediateDatatype:"record", getters:["f1","f2"]}
     case "record":
+      var res = {};
+      res[decl.recordname] = {intermediateDatatype:"record", getters:decl.fields};
+      for(var i in decl.fields){
+        res[decl.fields[i]] = eval("(function(x){ return x[\'"+decl.fields[i]+"\']; })");
+      }
+      return res;
       break;
     default: console.log("error at declToCtx");
   }
