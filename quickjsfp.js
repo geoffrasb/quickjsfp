@@ -1,6 +1,15 @@
 // to implement: module,exporting, lam, cases, lamcases
 // function constructed by lam can either be curried or noncurried
 
+function genVars(n){
+  //!n>=0
+  var res = [];
+  for(var i=0;i<n;i++){
+    res.push("_"+i);
+  }
+  return res;
+}
+
 function alterCtx(ctxs,f){
   //!ctxs is a list of objects
   //!check overlaped existence of keys
@@ -130,12 +139,21 @@ function declToCtx(decl){
   switch(decl.decltype){
     case "data":
       var res = {}
-      res[decl.typename] = ;//constructors for exporting
+      // how constructors work?
+      // making objects:{
+      //   fromConstructor: Cons
+      //   arguments: [x,xs]
+      //   }
+      // intermediate data
+      // data -> {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}
       for(var i in decl.constructors){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
-        res[cnstrName] = ?;
+        res[cnstrName] = eval('(function('
       }
+
+      res[decl.typename] = ;//constructors for exporting
+      
       return res;
       break;
 
