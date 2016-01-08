@@ -19,6 +19,7 @@ var mod1 = module('modName/1'
  , 'data Pair = Pr/2'
  , 'open moduleX'
  , 'data List = Cons/2 | Nil/0'
+ , 'record R = f1 f2 f3'
  , function (arg1){
 
    var subMod = module(...)
@@ -41,6 +42,13 @@ Types and modules needed in the module should be declared first, as the argument
 ### importing modules
 
 ### type introduction
+
+  builtin
+    tuples, lists
+  function type
+  data
+  record
+  codata
 
 ### type elimination
 

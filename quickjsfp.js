@@ -1,9 +1,68 @@
+// to implement: module,exporting, lam, cases, lamcases
+// function constructed by lam can either be curried or noncurried
+
+function runwith(ctxs,f){
+  //!ctxs is a list of objects
+
+  var fstr = "(function(){\n";
+  for(var i=0;i<ctxs.length;i++){
+    for(var k in ctxs[i]){
+      fstr += "var "+k+"=ctxs[\'"+i+"\'][\'"+k+"\'];\n";
+    }
+  }
+  fstr += "return ("+f.toString()+");})()"
+  return eval(fstr);
+}
+
+
+function curryfree(f){
+  if(f._length == null){
+    f['_length'] = f.length; }
+
+  var F = function(){
+    var thisF = arguments.callee;
+    var restArity = thisF._length - arguments.length;
+    if(restArity <=0){
+      return f.apply(this,arguments);
+    }else{
+      var curArgs = [];
+      for(var i in arguments){ curArgs.push(arguments[i]); }
+
+      var nextF = function(){
+        for(var i in arguments){ curArgs.push(arguments[i]); }
+        return f.apply(this, curArgs);
+      }
+      nextF['_length'] = restArity;
+      return curryFree(nextF);
+    }
+  }
+  F['_length'] = f._length;
+  return F;
+}
+
+
+function module(modname){
+  //length of arguments should be at least one(modname),
+  // then followed by numbers of data,module declaration,
+  // then last the module body
+
+  //!arguments checking
+
+  var decls = arguments.slice(1,arguments.length);
+  var modulebody = arguments[arguments.length-1];
+
+  var contexts = decls.map(parseDecl); 
+  //a context :: a table of symbol to be used in the module body
+
+ return runwith(contexts, modulebody)
+
+
+}
+
 //record/module system
 /*
-record R
-  constructor C/n
 
-mod1 = module( where
+mod1 = module( 'mod1/2'
 ,' data T1 = C1/0 | C2/0'
 ,' open modx (as M) using () | hiding () | renaming ()'
 ,' data T2 = C3/1 | C4/2'
@@ -45,17 +104,6 @@ cases( x , y,
 
 */
 
-// eliminating types
-/*
-x : T1
-t : T1 -> TX
-t = ind( x
-     , 'C1 x y . t1'
-     , 'C2 . t2'
-     )
-functional reduction:
-  f(x)
-*/
 
 
 // composition
