@@ -115,9 +115,45 @@ function exporting(/*args*/){
 
 
 function parseDecl(str){
-  // data T = c1/n1 | c2/n2
-  // open mod (as X) hiding () using () renaming
-  // record R = f1 f2 f3
+  str = str.trim();
+  
+  if(/data/.test(str)){
+    // "data T = c1/1 | c2/2"
+    // var declList = { decltype : "data"
+    //   , typename : "List"
+    //   , constructors : [["nil",0], ["cons",2]]
+    // }
+    
+    var temp = str.split(/=/);
+    var typename = temp[0].slice(temp[0].search(/\s+([a-zA-Z0-9_])+/),temp[0].length).trim();
+    var raw_cnstrs = temp[1].trim().split(/\|/).map(function(x){return x.trim();});
+
+    return { decltype : "data"
+           , typename : typename
+           , constructors : raw_cnstrs.map(function(x){ var p = x.split(/\//); return [p[0],parseInt(p[1])]})
+           };;
+
+
+
+  }else if(/open/.test(str)){
+    // open mod (as X) hiding () using () renaming
+    // var declM = { decltype : "open"
+    // , quantifier : "M" //"" for no quantifier
+    // , contents : {f1:5, f2:10, f3:15}
+    // , using : ["f2","f3"]
+    // , hides : ["f1"]
+    // , renaming : [['f3','g3']]
+    // }
+  
+  }else if(/record/.test(str)){
+    // record R = f1 f2 f3
+    // var declR = { decltype : "record"
+    // , recordname : "R"
+    // , fields : ["f1","f2"]
+    // }
+  }else{
+    console.log("error at parseDecl");
+  }
 }
 
 
@@ -196,7 +232,7 @@ function declToCtx(decl){
             }
           }
           if(decl.contents[k] == null){
-            console.log("using nonexist thing \'"+k+"\' of the module");
+            console.log("Warning: using nonexist thing \'"+k+"\' of the module");
           }else{
             opening[nameAltered? newName : k] = decl.contents[k];
           }
@@ -244,6 +280,16 @@ function module(modname){
 
 }
 
+
+// functions to implement:
+// cases
+// lam
+// lamcases
+// ll
+// lp
+// comp
+
+
 //record/module system
 /*
 
@@ -290,22 +336,3 @@ cases( x , y,
 */
 
 
-
-// composition
-/* f : a -> b
-   g : b -> c
-   h : a -> b -> c
-   x : a
-
-   f(x)
-   h(f(x))
-   g(f(x))
-*/
-
-
-/* example
-D('List = Cons 2 | Nil 0')
-length = lamInd( 'Cons x xs . 1 + length(xs)'
-               , 'Nil . 0'
-               )
-*/
