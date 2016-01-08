@@ -116,6 +116,8 @@ function exporting(/*args*/){
 
 function parseDecl(str){
   // data T = c1/n1 | c2/n2
+  // open mod (as X) hiding () using () renaming
+  // record R = f1 f2 f3
 }
 
 
@@ -129,6 +131,7 @@ function parseDecl(str){
 // var declM = { decltype : "open"
 // , quantifier : "M" //"" for no quantifier
 // , contents : {f1:5, f2:10, f3:15}
+// , using : ["f2","f3"]
 // , hides : ["f1"]
 // , renaming : [['f3','g3']]
 // }
@@ -166,6 +169,7 @@ function declToCtx(decl){
     // var declM = { decltype : "open"
     // , quantifier : "M" //"" for no quantifier
     // , contents : {f1:5, f2:10, f3:15}
+    // , use : ["f2","f3"]
     // , hides : ["f1"]
     // , renaming : [['f3','g3']]
     // }
@@ -179,7 +183,8 @@ function declToCtx(decl){
       var in_hides_list = false;
       var nameAltered = false;
       var newName = "";
-      for(var k in decl.contents){
+      for(var u in decl.use){
+        var k = decl.use[u];
         in_hides_list = decl.hides.reduce(function(b,x){ return(x==k)||b;},false);
         if(!in_hides_list){
           //setting nameAltered and newName
@@ -190,7 +195,11 @@ function declToCtx(decl){
               break;
             }
           }
-          opening[nameAltered? newName : k] = decl.contents[k];
+          if(decl.contents[k] == null){
+            console.log("using nonexist thing \'"+k+"\' of the module");
+          }else{
+            opening[nameAltered? newName : k] = decl.contents[k];
+          }
           nameAltered = false;
         }
       }
