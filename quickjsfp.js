@@ -85,22 +85,6 @@ function exporting(/*args*/){
 }
 
 
-// how pattern matching works
-// @ pattern
-// match("(x:xs)",data,function(){ ...x,....xs...})
-// record patterns
-// "R{a,b,c}"
-// "{a=x,b=y}"
-
-
-// how modules work?
-// module -> {_exported:["xxx","yyy"], xxx :..., yyy:...}
-
-// how records work?
-// records are objects
-// record name "R" can help make an object, but it's not necessary
-// but "R" itself contains accessor for the record
-
 
 
 
@@ -169,22 +153,7 @@ function parseDecl(str){
 
 
 
-// example decl intermediate data
-// var declList = { decltype : "data"
-//   , typename : "List"
-//   , constructors : [["nil",0], ["cons",2]]
-// }
-// var declM = { decltype : "open"
-// , quantifier : "M" //"" for no quantifier
-// , contents : {f1:5, f2:10, f3:15}
-// , use : ["f2","f3"]
-// , hides : ["f1"]
-// , renaming : [['f3','g3']]
-// }
-// var declR = { decltype : "record"
-// , recordname : "R"
-// , fields : ["f1","f2"]
-// }
+
 function declToCtx(decl){
   switch(decl.decltype){
     case "data":
@@ -206,7 +175,7 @@ function declToCtx(decl){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
         res[cnstrName] = curryfree(eval("(function("+genVars(cnstrArity).toString()+"){\n" +
-          "return { fromConstructor:"+cnstrName+"\n" +
+          "return { fromConstructor:\'"+cnstrName+"\'\n" +
           ", args: arguments } })"));
         res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
       }
@@ -282,6 +251,17 @@ function declToCtx(decl){
     default: console.log("error at declToCtx");
   }
 }
+
+
+
+// how pattern matching works
+// @ pattern
+// match("(x:xs)",data,function(){ ...x,....xs...})
+// record patterns
+// "R{a,b,c}"
+// "{a=x,b=y}"
+
+
 
 function module(modname){
   //length of arguments should be at least one(modname),
