@@ -25,12 +25,12 @@ var declR = { decltype : "record"
 * context representation of declarations
 
   + data
-    - typename(e.g., List): `List` support the `exporting` function to work. (`List = {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}`).
-    - constructor(e.g., Cons,Nil): constructors are functions, making objects:{fromConstructor:"Cons", args:[x,xs]}
+    - typename(e.g., `List`): `List` support the `exporting` function to work. (`List = {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}`).
+    - constructor(e.g., `Cons`,`Nil`): constructors are functions, making objects:`{fromConstructor:"Cons", args:[x,xs]}`
   + open
-    -
+    - just open things in the module. btw, a module is like `{_exported:['f1','f2'], f1:..., f2:... }`
   + record
-    -
+    - a record is a constructor constains fields: `{intermediateDatatype:"record", getters:["f1","f2"]}`, this is also for the `exporting` function.
 
 
 

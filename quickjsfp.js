@@ -158,17 +158,6 @@ function declToCtx(decl){
   switch(decl.decltype){
     case "data":
       var res = {}
-      // how constructors work?
-      // making objects:{
-      //   fromConstructor: Cons
-      //   args: [x,xs]
-      //   }
-      // var declList = { decltype : "data"
-      //   , typename : "List"
-      //   , constructors : [["nil",0], ["cons",2]]
-      // }
-      // intermediate data
-      // data -> {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}
       res[decl.typename] = {intermediateDatatype:"data",constructors:[]};
 
       for(var i in decl.constructors){
@@ -184,14 +173,6 @@ function declToCtx(decl){
       break;
 
 
-
-    // var declM = { decltype : "open"
-    // , quantifier : "M" //"" for no quantifier
-    // , contents : {f1:5, f2:10, f3:15}
-    // , use : ["f2","f3"]
-    // , hides : ["f1"]
-    // , renaming : [['f3','g3']]
-    // }
     case "open":
       var res = {};
       var opening = res;
@@ -227,12 +208,6 @@ function declToCtx(decl){
 
 
 
-    // var declR{ decltype : "record"
-    // , recordname : "R"
-    // , fields : ["f1","f2"]
-    // }
-    // intermediate data
-    // a record is a constructor constains fields: {intermediateDatatype:"record", getters:["f1","f2"]}
     case "record":
       var res = {};
       var vars = genVars(decl.fields.length);
@@ -252,7 +227,7 @@ function declToCtx(decl){
   }
 }
 
-
+//---------------------------------------------------------------------------------------------------
 
 // how pattern matching works
 // @ pattern
