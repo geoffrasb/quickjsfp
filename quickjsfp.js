@@ -125,7 +125,7 @@ function parseDecl(str){
     // }
     
     var temp = str.split(/=/);
-    var typename = temp[0].slice(temp[0].search(/\s+([a-zA-Z0-9_])+/),temp[0].length).trim();
+    var typename = temp[0].slice(temp[0].search(/\s+([a-zA-Z_][a-zA-Z0-9_]*)/),temp[0].length).trim();
     var raw_cnstrs = temp[1].trim().split(/\|/).map(function(x){return x.trim();});
 
     return { decltype : "data"
@@ -144,9 +144,9 @@ function parseDecl(str){
     // , hides : ["f1"]
     // , renaming : [['f3','g3']]
     // }
-    var modname = str.match(/open\s+[a-zA-Z0-9_]+/)[0].slice(4).trim(); 
-    var mod = eval("this."+modname);
-    var asname = (asname = str.match(/as\s+[a-zA-Z0-9_]+/))? asname[0].slice(2).trim() : "";
+    var modname = str.match(/open\s+([a-zA-Z_][a-zA-Z0-9_]*)/)[0].slice(4).trim(); 
+    var mod = eval(modname);
+    var asname = (asname = str.match(/as\s+([a-zA-Z_][a-zA-Z0-9_]*)/))? asname[0].slice(2).trim() : "";
     var hidingRaw = (hidingRaw = str.match(/hiding\s+\([^\)]*\)/))? hidingRaw[0].slice(hidingRaw[0].search(/\(/)+1,-1) : null;
     var usingRaw = (usingRaw = str.match(/using\s+\([^\)]*\)/))? usingRaw[0].slice(usingRaw[0].search(/\(/)+1,-1) : null;
     var renRaw = (renRaw = str.match(/renaming\s+\([^\)]*\)/))? renRaw[0].slice(renRaw[0].search(/\(/)+1,-1) : null;
@@ -166,6 +166,11 @@ function parseDecl(str){
     // , recordname : "R"
     // , fields : ["f1","f2"]
     // }
+    var temp = str.split('=');
+    return { decltype : "record"
+           , recordname : temp[0].slice(6).match(/\s+([a-zA-Z_][a-zA-Z0-9_]*)/)[0]
+           }
+    break;
   }else{
     console.log("error at parseDecl");
   }
