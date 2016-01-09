@@ -168,7 +168,8 @@ function parseDecl(str){
     // }
     var temp = str.split('=');
     return { decltype : "record"
-           , recordname : temp[0].slice(6).match(/\s+([a-zA-Z_][a-zA-Z0-9_]*)/)[0]
+           , recordname : temp[0].slice(6).match(/\s+([a-zA-Z_][a-zA-Z0-9_]*)/)[0].trim()
+           ,fields : temp[1].trim().split(/\s+/)
            }
     break;
   }else{
