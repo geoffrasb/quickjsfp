@@ -84,16 +84,6 @@ function exporting(/*args*/){
   }
 }
 
-// intermediate data
-// data -> {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}
-// module -> {_exported:["xxx","yyy"], xxx :..., yyy:...}
-// record -> {intermediateDatatype:"record", getters:["f1","f2"]}
-
-// how constructors work?
-// making objects:{
-//   fromConstructor: Cons
-//   args: [x,xs]
-//   }
 
 // how pattern matching works
 // @ pattern
@@ -171,7 +161,6 @@ function parseDecl(str){
            , recordname : temp[0].slice(6).match(/\s+([a-zA-Z_][a-zA-Z0-9_]*)/)[0].trim()
            ,fields : temp[1].trim().split(/\s+/)
            }
-    break;
   }else{
     console.log("error at parseDecl");
   }
@@ -274,13 +263,20 @@ function declToCtx(decl){
     // , fields : ["f1","f2"]
     // }
     // intermediate data
-    // record -> {intermediateDatatype:"record", getters:["f1","f2"]}
+    // a record is a constructor constains fields: {intermediateDatatype:"record", getters:["f1","f2"]}
     case "record":
       var res = {};
-      res[decl.recordname] = {intermediateDatatype:"record", getters:decl.fields};
+      var vars = genVars(decl.fields.length);
+      var cnstrRaw = "(function("+vars.join()+"){\nreturn { "
+      
       for(var i in decl.fields){
         res[decl.fields[i]] = eval("(function(x){ return x[\'"+decl.fields[i]+"\']; })");
+        cnstrRaw += (i==0?"":", ") + decl.fields[i]+" : "+vars[i]+"\n";
       }
+      res[decl.recordname] = eval(cnstrRaw+"}})");
+      res[decl.recordname]["intermediateDatatype"] = "record";
+      res[decl.recordname]["getters"] = decl.fields;
+
       return res;
       break;
     default: console.log("error at declToCtx");
