@@ -131,19 +131,34 @@ function parseDecl(str){
     return { decltype : "data"
            , typename : typename
            , constructors : raw_cnstrs.map(function(x){ var p = x.split(/\//); return [p[0],parseInt(p[1])]})
-           };;
+           };
 
 
 
   }else if(/open/.test(str)){
-    // open mod (as X) hiding () using () renaming
+    // open mod as X hiding (f1) using (f2;f3) renaming (f3 to g3)
     // var declM = { decltype : "open"
     // , quantifier : "M" //"" for no quantifier
     // , contents : {f1:5, f2:10, f3:15}
-    // , using : ["f2","f3"]
+    // , use : ["f2","f3"]
     // , hides : ["f1"]
     // , renaming : [['f3','g3']]
     // }
+    var modname = str.match(/open\s+[a-zA-Z0-9_]+/)[0].slice(4).trim(); 
+    var mod = eval("this."+modname);
+    var asname = (asname = str.match(/as\s+[a-zA-Z0-9_]+/))? asname[0].slice(2).trim() : "";
+    var hidingRaw = (hidingRaw = str.match(/hiding\s+\([^\)]*\)/))? hidingRaw[0].slice(hidingRaw[0].search(/\(/)+1,-1) : null;
+    var usingRaw = (usingRaw = str.match(/using\s+\([^\)]*\)/))? usingRaw[0].slice(usingRaw[0].search(/\(/)+1,-1) : null;
+    var renRaw = (renRaw = str.match(/renaming\s+\([^\)]*\)/))? renRaw[0].slice(renRaw[0].search(/\(/)+1,-1) : null;
+
+    return { decltype : "open"
+           , quantifier : asname
+           , hides : hidingRaw? hidingRaw.split(";").map(function(x){return x.trim()}) : []
+           , renaming : renRaw? renRaw.split(";").map(function(ren){return ren.split("to").map(function(x){return x.trim()})}) : []
+           , contents : mod
+           , use : usingRaw? usingRaw.split(";").map(function(x){return x.trim()}) : mod._exported
+           }
+
   
   }else if(/record/.test(str)){
     // record R = f1 f2 f3
@@ -167,7 +182,7 @@ function parseDecl(str){
 // var declM = { decltype : "open"
 // , quantifier : "M" //"" for no quantifier
 // , contents : {f1:5, f2:10, f3:15}
-// , using : ["f2","f3"]
+// , use : ["f2","f3"]
 // , hides : ["f1"]
 // , renaming : [['f3','g3']]
 // }
@@ -184,6 +199,10 @@ function declToCtx(decl){
       //   fromConstructor: Cons
       //   args: [x,xs]
       //   }
+      // var declList = { decltype : "data"
+      //   , typename : "List"
+      //   , constructors : [["nil",0], ["cons",2]]
+      // }
       // intermediate data
       // data -> {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}
       res[decl.typename] = {intermediateDatatype:"data",constructors:[]};
@@ -280,6 +299,7 @@ function module(modname){
 
 }
 
+// need built-in module, embeded in module declaration
 
 // functions to implement:
 // cases
