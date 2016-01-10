@@ -45,7 +45,7 @@ function curryfree(f){
         return f.apply(this, curArgs);
       }
       nextF['_length'] = restArity;
-      return curryFree(nextF);
+      return curryfree(nextF);
     }
   }
   F['_length'] = f._length;
@@ -298,6 +298,7 @@ return { //exporting to quickjsfp
 , set_builtin_pr5 : set_builtin_pr5
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
+, curryfree : curryfree
 }
 })(); // end of quickjsfp closure
 
@@ -313,51 +314,5 @@ return { //exporting to quickjsfp
 // ll
 // lp
 // comp
-
-
-//record/module system
-/*
-
-mod1 = module( 'mod1/2'
-,' data T1 = C1/0 | C2/0'
-,' open modx (as M) using () | hiding () | renaming ()'
-,' data T2 = C3/1 | C4/2'
-, function (arg1,opr1){
-
-  privateFunc = ...
-
-  return 
-    exporting(T1,T2)({
-    t1 : term1
-    t2 : term2
-  })
-})
-
-
-*/
-
-
-//core types: data(constructed by),function(arity)
-//simple check: function arity check
-// pattern matching handling
-// introducing types
-/*
-function def
-in string:
-lam(`\\ x y . t `) , can do single case pattern matching
-same as
-function(x,y){return t;}
-note that
-`\\ x y . t` =! `\\ x . \\ y . t`
-
-lamCases([ 'Case1 . t1'
-       , 'Case2 . t2'
-       ])
-cases( x , y,
-   ['(Pr a b) (Cns h t) . t1'
-   ,'(Pr a b) _ . t2'
-   ])
-
-*/
 
 
