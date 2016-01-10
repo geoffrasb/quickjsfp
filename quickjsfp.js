@@ -240,8 +240,10 @@ function declToCtx(decl){
 // "R{a,b,c}"
 // "{a=x,b=y}"
 
-var _builtin_list = {};
-function set_builtin_list(x){ _builtin_list = x; }
+var _builtin_cons = {};
+function set_builtin_cons(x){ _builtin_cons = x; }
+var _builtin_nil = {};
+function set_builtin_nil(x){ _builtin_nil = x; }
 var _builtin_pr2 = {};
 function set_builtin_pr2(x) _builtin_pr2 = x; }
 var _builtin_pr3 = {};
@@ -265,6 +267,7 @@ function matchPattern(pat, data){
   // "(... , ... , ...)"
   // "[]"
   // "x : xs"
+
 }
 
 
@@ -291,7 +294,8 @@ function module(modname){
 
 return { //exporting to quickjsfp
   module : module
-, set_builtin_list : set_builtin_list
+, set_builtin_cons : set_builtin_cons
+, set_builtin_nil : set_builtin_nil
 , set_builtin_pr2 : set_builtin_pr2
 , set_builtin_pr3 : set_builtin_pr3
 , set_builtin_pr4 : set_builtin_pr4
