@@ -1,6 +1,7 @@
 // to implement: module,exporting, lam, cases, lamcases
 // function constructed by lam can either be curried or noncurried
 
+var quickjsfp = (function(){
 
 function genVars(n){
   //!n>=0
@@ -229,12 +230,43 @@ function declToCtx(decl){
 
 //---------------------------------------------------------------------------------------------------
 
+// bulit-in functions
+// need builtin pragma
+
 // how pattern matching works
 // @ pattern
 // match("(x:xs)",data,function(){ ...x,....xs...})
 // record patterns
 // "R{a,b,c}"
 // "{a=x,b=y}"
+
+var _builtin_list = {};
+function set_builtin_list(x){ _builtin_list = x; }
+var _builtin_pr2 = {};
+function set_builtin_pr2(x) _builtin_pr2 = x; }
+var _builtin_pr3 = {};
+function set_builtin_pr3(x) _builtin_pr3 = x; }
+var _builtin_pr4 = {};
+function set_builtin_pr4(x) _builtin_pr4 = x; }
+var _builtin_pr5 = {};
+function set_builtin_pr5(x) _builtin_pr5 = x; }
+var _builtin_pr6 = {};
+function set_builtin_pr6(x) _builtin_pr6 = x; }
+var _builtin_pr7 = {};
+function set_builtin_pr7(x) _builtin_pr7 = x; }
+
+function matchPattern(pat, data){
+  // cases of paterns
+  // "v"
+  // "C pat1 pat2"
+  // "(pat)"
+  // "v1@(pat)"
+  // special patterns for pairs and list
+  // "(... , ... , ...)"
+  // "[]"
+  // "x : xs"
+}
+
 
 
 
@@ -256,7 +288,23 @@ function module(modname){
 
 }
 
-// need built-in module, embeded in module declaration
+
+return { //exporting to quickjsfp
+  module : module
+, set_builtin_list : set_builtin_list
+, set_builtin_pr2 : set_builtin_pr2
+, set_builtin_pr3 : set_builtin_pr3
+, set_builtin_pr4 : set_builtin_pr4
+, set_builtin_pr5 : set_builtin_pr5
+, set_builtin_pr6 : set_builtin_pr6
+, set_builtin_pr7 : set_builtin_pr7
+}
+})(); // end of quickjsfp closure
+
+// built-in modules
+
+
+
 
 // functions to implement:
 // cases
