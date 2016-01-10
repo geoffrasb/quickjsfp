@@ -167,6 +167,7 @@ function declToCtx(decl){
         res[cnstrName] = curryfree(eval("(function("+genVars(cnstrArity).toString()+"){\n" +
           "return { fromConstructor:"+cnstrName+"\n" +
           ", args: arguments } })"));
+        res[cnstrName]["constructorName"] = cnstrName;
         res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
       }
       
@@ -272,8 +273,10 @@ function matchPattern(pat, data){
   var res = []; //return format: [['varname',data]]
   
   if(/^\[\]$/.test(pat)){  //"[]"
-    if(data.fromConstructor == 'nil'
-    return res;
+    if(data.fromConstructor == _builtin_nil){
+      return res; }
+    else{
+      console.log("error: pattern match failed at []"); }
 
   }else if(pat[0]=='(' && pat[pat.length-1]==')'){ //"(pat)"
     return return matchPattern()
