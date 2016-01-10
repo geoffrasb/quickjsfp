@@ -165,7 +165,7 @@ function declToCtx(decl){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
         res[cnstrName] = curryfree(eval("(function("+genVars(cnstrArity).toString()+"){\n" +
-          "return { fromConstructor:\'"+cnstrName+"\'\n" +
+          "return { fromConstructor:"+cnstrName+"\n" +
           ", args: arguments } })"));
         res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
       }
@@ -258,6 +258,7 @@ var _builtin_pr7 = {};
 function set_builtin_pr7(x) _builtin_pr7 = x; }
 
 function matchPattern(pat, data){
+  pat = pat.trim();
   // cases of paterns
   // "v"
   // "C pat1 pat2"
@@ -266,8 +267,18 @@ function matchPattern(pat, data){
   // special patterns for pairs and list
   // "(... , ... , ...)"
   // "[]"
-  // "x : xs"
+  // "pat : pat"
 
+  var res = []; //return format: [['varname',data]]
+  
+  if(/^\[\]$/.test(pat)){  //"[]"
+    if(data.fromConstructor == 'nil'
+    return res;
+
+  }else if(pat[0]=='(' && pat[pat.length-1]==')'){ //"(pat)"
+    return return matchPattern()
+
+  }else if
 }
 
 
