@@ -478,6 +478,8 @@ function module(modname){
 return { //exporting to quickjsfp
   module : module
 , set_builtin_cons : set_builtin_cons
+, set_builtin_head : set_builtin_head
+, set_builtin_tail : set_builtin_tail
 , set_builtin_nil : set_builtin_nil
 , set_builtin_pr2 : set_builtin_pr2
 , set_builtin_pr3 : set_builtin_pr3
