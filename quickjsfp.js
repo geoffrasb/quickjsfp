@@ -313,10 +313,10 @@ var splitPatList = (function(){
 
 function matchPattern(pat, data){
   pat = pat.trim();
-  // pat = v                          -> problem, how about value?
+  // pat = v                          -> variable or Constructor or value (test by (==))
   //     | Cnstr                      ->
   //     | []                         => ok
-  //     | (pat)                      => haven't tested
+  //     | (pat)                      -> haven't tested
   //     | { f1 = pat1 , f2 = pat2 }  working
   //     | R{ pat1 , pat2 }           working
   //     | v@(pat)                    => ok
@@ -383,9 +383,10 @@ function matchPattern(pat, data){
       var intrptPat = eval(pat);
       if(typeof intrptPat == "function" && /./.test(intrptPat.constructorName)){
         return (data.fromConstructor===intrptPat)? [] : null;
+      }else if(data == intrptPat){
+        return [];
       }else{
-        return [[pat, data]];
-      }
+        return null;}
     }catch(e){
       return [[pat, data]];
     }
