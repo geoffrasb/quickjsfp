@@ -234,7 +234,11 @@ function declToCtx(decl){
 // need builtin pragma
 
 var _builtin_cons = {};
+var _builtin_head = {};
+var _builtin_tail = {};
 function set_builtin_cons(x){ _builtin_cons = x; }
+function set_builtin_head(f){ _builtin_head = f; }
+function set_builtin_tail(f){ _builtin_tail = f; }
 var _builtin_nil = {};
 function set_builtin_nil(x){ _builtin_nil = x; }
 var _builtin_pr2 = {};
@@ -270,46 +274,45 @@ var closedBy = function(l,str,r){
     return false;
   }
 }
-var splitPatList = (function(){
-  var revPar = function(par){
+var revPar = function(par){
     if(par == ')') return '(';
     if(par == '}') return '{';
     console.log('error: unexpect input for revPar');
     return null;
   }
-  var findNextComma = function(str,start){
-    var parRecord = []; // excluding commas in () and {}
-    for(var i = start; i<str.length; i++){
-      if(str[i] == ',' && parRecord.length == 0){
-        return i;
-      }else if(str[i]=='(' || str[i]=='{'){
-        parRecord.push(str[i]);
-      }else if(str[i]==')' || str[i]=='}'){
-        var temp = parRecord.pop();
-        if(temp!=revPar(str[i])){
-          console.log('error: invalid pattern list: \"'+str+'\".');
-          return null;
-        }
+var findNextSplit = function(symb,str,start){
+  var parRecord = []; // excluding commas in () and {}
+  for(var i = start; i<str.length; i++){
+    if(str[i] == symb && parRecord.length == 0){
+      return i;
+    }else if(str[i]=='(' || str[i]=='{'){
+      parRecord.push(str[i]);
+    }else if(str[i]==')' || str[i]=='}'){
+      var temp = parRecord.pop();
+      if(temp!=revPar(str[i])){
+        console.log('error: invalid pattern list: \"'+str+'\".');
+        return null;
       }
     }
-    return -1; //represent no next
   }
-  return function(pat){ //"pat1 , pat2 ..." at least one
-    pat = pat.trim();
-    if(pat == "") {
-      return []; }
-    var allPats = [];
-    var lastStart = 0;
-    var next = findNextComma(pat,lastStart);
-    while(next!=-1 && next!=null){
-      allPats.push(pat.slice(lastStart,next).trim());
-      lastStart = next+1;
-      next = findNextComma(pat,lastStart);
-    }
-    allPats.push(pat.slice(lastStart));
-    return allPats;
+  return -1; //represent no next
+}
+
+var splitPatList = function(pat){ //"pat1 , pat2 ..." at least one
+  pat = pat.trim();
+  if(pat == "") {
+    return []; }
+  var allPats = [];
+  var lastStart = 0;
+  var next = findNextSplit(',',pat,lastStart);
+  while(next!=-1 && next!=null){
+    allPats.push(pat.slice(lastStart,next).trim());
+    lastStart = next+1;
+    next = findNextSplit(',',pat,lastStart);
   }
-})()
+  allPats.push(pat.slice(lastStart));
+  return allPats;
+}
 
 function matchPattern(pat, data){
   pat = pat.trim();
@@ -321,8 +324,8 @@ function matchPattern(pat, data){
   //     | v@(pat)                    => ok
   //     | v@R{ .. }                  => ok
   //     | v@{ .. }                   => ok
-  //     | x : xs 
-  //     | _
+  //     | x : xs                     -> haven't tested
+  //     | _                          -> haven't tested
 
 
   //return format: [['varname',data]]
@@ -429,6 +432,20 @@ function matchPattern(pat, data){
       }
     }
     return res;
+  }else if(pat == "_"){
+    return [];
+  }else if(findNextSplit(':',pat,0)!=-1){ // pat : pat
+    if(data.fromConstructor != _builtin_cons){
+      return null;
+    }
+    var colonInd = findNextSplit(':',pat,0);
+    var head = matchPattern(pat.slice(0,colonInd).trim(), _builtin_head(data));
+    var tail = matchPattern(pat.slice(colonInd+1).trim(), _builtin_tail(data));
+    if(head==null || tail==null){
+      return null;
+    }else{
+      return head.concat(tail);
+    }
 
   }else{
     console.log('error: \"'+pat+'\" is not an acceptable pattern.');
