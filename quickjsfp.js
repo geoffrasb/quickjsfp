@@ -315,9 +315,9 @@ function matchPattern(pat, data){
   pat = pat.trim();
   // pat = v                          -> variable or Constructor or value (test by (==))
   //     | []                         => ok
-  //     | (pattern list)                      -> haven't tested
-  //     | { f1 = pat1 , f2 = pat2 }  working
-  //     | R{ pat1 , pat2 }           working
+  //     | (pattern list)             -> haven't tested
+  //     | { f1 = pat1 , f2 = pat2 }  -> haven't tested
+  //     | R{ pat1 , pat2 }           -> haven't tested
   //     | v@(pat)                    => ok
   //     | v@R{ .. }                  => ok
   //     | v@{ .. }                   => ok
@@ -403,19 +403,30 @@ function matchPattern(pat, data){
       return null;
     }
     var res = [];
+    var temp = {};
     for(var i=0;i<pats.length;i++){
-      res.concat(matchPattern(pats[i], data[allFields[i]]));
+      temp = matchPattern(pats[i], data[allFields[i]]);
+      if(temp!=null){
+        res.concat(temp);
+      }else{
+        return null;
+      }
     }
     return res;
 
 
   }else if(pat[0]=='{' && pat[pat.length-1]=='}'){ //{f1=pat1, f2=pat2}
     var field_pats = splitPatList(pat.slice(1,-1)); 
-    var temp={};
+    var temp=temp2={};
     var res = [];
     for(var i=0;i<field_pats.length;i++){
       temp = field_pats[i].split('=').map(function(x){return x.trim();});
-      res.concat(matchPattern(temp[1], data[temp[0]]));
+      temp2 = matchPattern(temp[1], data[temp[0]]);
+      if(temp2!=null){
+        res.concat(temp2);
+      }else{
+        return null;
+      }
     }
     return res;
 
