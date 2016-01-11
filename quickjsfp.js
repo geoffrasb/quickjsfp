@@ -258,18 +258,56 @@ var closedBy = function(l,str,r){
     return false;
   }
 }
-
+var splitPatList = (function(){
+  var revPar = function(par){
+    if(par == ')') return '(';
+    if(par == '}') return '{';
+    console.log('error: unexpect input for revPar');
+    return null;
+  }
+  var findNextComma = function(str,start){
+    var parRecord = []; // excluding commas in () and {}
+    for(var i = start; i<str.length; i++){
+      if(str[i] == ',' && parRecord.length == 0){
+        return i;
+      }else if(str[i]=='(' || str[i]=='{'){
+        parRecord.push(str[i]);
+      }else if(str[i]==')' || str[i]=='}'){
+        var temp = parRecord.pop();
+        if(temp!=revPar(str[i])){
+          console.log('error: invalid pattern list: \"'+str+'\".');
+          return null;
+        }
+      }
+    }
+    return -1; //represent no next
+  }
+  return function(pat){ //"pat1 , pat2 ..." at least one
+    pat = pat.trim();
+    var allPats = [];
+    var lastStart = 0;
+    var next = findNextComma(pat,lastStart);
+    while(next!=-1 && next!=null){
+      allPats.push(pat.slice(lastStart,next).trim());
+      lastStart = next+1;
+      next = findNextComma(pat,lastStart);
+    }
+    allPats.push(pat.slice(lastStart));
+    return allPats;
+  }
+})()
 
 function matchPattern(pat, data){
   pat = pat.trim();
-  // pat = v
-  //     | [] 
-  //     | (pat) 
-  //     | { f1 = pat1 , f2 = pat2 }
-  //     | R{ pat1 , pat2 }
-  //     | v@(pat)
-  //     | v@R{ .. }
-  //     | v@{ .. }
+  // pat = v                          -> problem, how about value?
+  //     | Cnstr                      ->
+  //     | []                         => ok
+  //     | (pat)                      => ok
+  //     | { f1 = pat1 , f2 = pat2 }  working
+  //     | R{ pat1 , pat2 }           working
+  //     | v@(pat)                    => ok
+  //     | v@R{ .. }                  => ok
+  //     | v@{ .. }                   => ok
   //     | ( pat1 , pat2 )
   //     | x : xs 
 
@@ -293,6 +331,7 @@ function matchPattern(pat, data){
     if(closedBy('(',restPat,')')){ //var@(pat)
       var next = matchPattern(pat.slice(pat.search(/@/)+2, -1), data);
       return next? [[wholeVar, data]].concat(next) : null;
+
     }else if((new RegExp("^"+nameReg+"\\{.*\\}$")).test(restPat) || (restPat[0]=='{' && restPat[restPat.length-1]=='}')){
       //var@R{...} and var@{...} pattern
       var next = matchPattern(restPat,data);
@@ -303,8 +342,9 @@ function matchPattern(pat, data){
 
   }else if((new RegExp("^"+nameReg+"$")).test(pat)){ //"v1"
     try{
-      if(typeof eval(pat) == "function" && /./.test(pat.constructorName)){
-        return [];
+      var intrptPat = eval(pat);
+      if(typeof intrptPat == "function" && /./.test(intrptPat.constructorName)){
+        return (data.fromConstructor===intrptPat)? [] : null;
       }else{
         return [[pat, data]];
       }
