@@ -316,7 +316,7 @@ function matchPattern(pat, data){
   // pat = v                          -> problem, how about value?
   //     | Cnstr                      ->
   //     | []                         => ok
-  //     | (pat)                      => ok
+  //     | (pat)                      => haven't tested
   //     | { f1 = pat1 , f2 = pat2 }  working
   //     | R{ pat1 , pat2 }           working
   //     | v@(pat)                    => ok
@@ -338,17 +338,30 @@ function matchPattern(pat, data){
 
   }else if(pat[0]=='(' && pat[pat.length-1]==')'){ //"(pats)"
     var pats = splitPatList(pat.slice(1,-1));
-    switch(pats.length){
-      case 0:
-        console.log('error: invalid pattern: \"'+pat+'\".');
-        return null;
-      case 1:
-        return matchPattern(pat.slice(1,-1) ,data);
-      case 2:
-        if(data.fromConstructor == _builtin_pr2){
-        }else{
-          return null; }
+    if(pats.length == 0){
+      console.log('error: invalid pattern: \"'+pat+'\".');
+      return null;
+    }else if(pats.length == 1){
+      return matchPattern(pat.slice(1,-1) ,data); 
+    }else if(pats.length <=7){
+      if(data.fromConstructor == eval("_builtin_pr"+pats.length)){
+        var datas = [];
+        var getter = eval("_builtin_getter_pr"+pats.length);
+        for(var i =0;i<pats.length;i++){
+          datas.push(getter(i)(data));
+        }
+        var res = [];
+        for(var i=0;i<pats.length;i++){
+          res.concat(matchPattern(pats[i],datas[i]));
+        }
+        return res;
+      }else{
+        return null; }
+    }else{
+      console.log('error: cannot accept tupple over 7. (at: '+pat+')');
+      return null;
     }
+    
 
   }else if((new RegExp("^"+nameReg+"@")).test(pat)){
     var wholeVar = pat.match(new RegExp("^"+nameReg+"@"))[0].slice(0,-1);
