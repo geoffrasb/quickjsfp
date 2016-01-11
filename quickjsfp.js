@@ -262,21 +262,16 @@ var closedBy = function(l,str,r){
 
 function matchPattern(pat, data){
   pat = pat.trim();
-  // cases of paterns
-  // 4 "v"
-  //  "C pat1 pat2"
-  //   --> "(pat)" or "v" or {..} or R{..}
-  // 2 "(pat)"
-  // 3 "v1@(pat)"
-  // ok "v1@{...}"
-  // ok "v1@R{...}"
-  // special patterns for pairs and list
-  // "(... , ... , ...)"
-  // 1 "[]"
-  // "pat : pat"
-  // record patterns
-  // working "R{pat1,pat2,pat3}"
-  // working "{a=x,b=y}"
+  // pat = v
+  //     | [] 
+  //     | (pat) 
+  //     | { f1 = pat1 , f2 = pat2 }
+  //     | R{ pat1 , pat2 }
+  //     | v@(pat)
+  //     | v@R{ .. }
+  //     | v@{ .. }
+  //     | ( pat1 , pat2 )
+  //     | x : xs 
 
 
   //return format: [['varname',data]]
