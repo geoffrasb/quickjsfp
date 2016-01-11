@@ -80,8 +80,7 @@ function exporting(/*args*/){
         console.log('error at exporting');
       }
     }
-    return expobj;
-    }
+  return expobj;
   }
 }
 
@@ -234,54 +233,97 @@ function declToCtx(decl){
 // bulit-in functions
 // need builtin pragma
 
-// how pattern matching works
-// @ pattern
-// match("(x:xs)",data,function(){ ...x,....xs...})
-// record patterns
-// "R{a,b,c}"
-// "{a=x,b=y}"
-
 var _builtin_cons = {};
 function set_builtin_cons(x){ _builtin_cons = x; }
 var _builtin_nil = {};
 function set_builtin_nil(x){ _builtin_nil = x; }
 var _builtin_pr2 = {};
-function set_builtin_pr2(x) _builtin_pr2 = x; }
+function set_builtin_pr2(x){ _builtin_pr2 = x; }
 var _builtin_pr3 = {};
-function set_builtin_pr3(x) _builtin_pr3 = x; }
+function set_builtin_pr3(x){ _builtin_pr3 = x; }
 var _builtin_pr4 = {};
-function set_builtin_pr4(x) _builtin_pr4 = x; }
+function set_builtin_pr4(x){ _builtin_pr4 = x; }
 var _builtin_pr5 = {};
-function set_builtin_pr5(x) _builtin_pr5 = x; }
+function set_builtin_pr5(x){ _builtin_pr5 = x; }
 var _builtin_pr6 = {};
-function set_builtin_pr6(x) _builtin_pr6 = x; }
+function set_builtin_pr6(x){ _builtin_pr6 = x; }
 var _builtin_pr7 = {};
-function set_builtin_pr7(x) _builtin_pr7 = x; }
+function set_builtin_pr7(x){ _builtin_pr7 = x; }
+
+var nameReg = "([a-zA-Z_][a-zA-Z0-9_]*)";
+var closedBy = function(l,str,r){ 
+  try{
+    return str[0]==l && str[str.length-1]==r;
+  }catch(e){
+    return false;
+  }
+}
+
 
 function matchPattern(pat, data){
   pat = pat.trim();
   // cases of paterns
-  // "v"
-  // "C pat1 pat2"
-  // "(pat)"
-  // "v1@(pat)"
+  // 4 "v"
+  //  "C pat1 pat2"
+  //   --> "(pat)" or "v" or {..} or R{..}
+  // 2 "(pat)"
+  // 3 "v1@(pat)"
+  // ok "v1@{...}"
+  // ok "v1@R{...}"
   // special patterns for pairs and list
   // "(... , ... , ...)"
-  // "[]"
+  // 1 "[]"
   // "pat : pat"
+  // record patterns
+  // working "R{pat1,pat2,pat3}"
+  // working "{a=x,b=y}"
 
-  var res = []; //return format: [['varname',data]]
+
+  //return format: [['varname',data]]
+  
   
   if(/^\[\]$/.test(pat)){  //"[]"
     if(data.fromConstructor == _builtin_nil){
-      return res; }
+      return []; }
     else{
-      console.log("error: pattern match failed at []"); }
+      return null;
+    }
 
   }else if(pat[0]=='(' && pat[pat.length-1]==')'){ //"(pat)"
-    return return matchPattern()
+    return matchPattern(pat.slice(1,-1) ,data);
 
-  }else if
+  }else if((new RegExp("^"+nameReg+"@")).test(pat)){
+    var wholeVar = pat.match(new RegExp("^"+nameReg+"@"))[0].slice(0,-1);
+    var restPat = pat.split(/@/)[1];
+    if(closedBy('(',restPat,')')){ //var@(pat)
+      var next = matchPattern(pat.slice(pat.search(/@/)+2, -1), data);
+      return next? [[wholeVar, data]].concat(next) : null;
+    }else if((new RegExp("^"+nameReg+"\\{.*\\}$")).test(restPat) || (restPat[0]=='{' && restPat[restPat.length-1]=='}')){
+      //var@R{...} and var@{...} pattern
+      var next = matchPattern(restPat,data);
+      return next? [[wholeVar, data]].concat(next) : null;
+    }
+    console.log("error: illegal pattern format: "+pat);
+    return null;
+
+  }else if((new RegExp("^"+nameReg+"$")).test(pat)){ //"v1"
+    try{
+      if(typeof eval(pat) == "function" && /./.test(pat.constructorName)){
+        return [];
+      }else{
+        return [[pat, data]];
+      }
+    }catch(e){
+      return [[pat, data]];
+    }
+
+  }else if((new RegExp("^"+nameReg+"\\{.*\\}$")).test(pat)){ //R{...}
+    var recordName = pat.match(new RegExp(nameReg))[0];
+    //var allVars = pat.slice(pat.search(/\{/)+1, -1).split(",").map(function(x){return x.trim()});
+    var allFields = eval(recordName+".getters")
+
+  }else if(pat[0]=='{' && pat[pat.length-1]=='}'){ //{...}
+  }
 }
 
 
