@@ -238,17 +238,29 @@ function set_builtin_cons(x){ _builtin_cons = x; }
 var _builtin_nil = {};
 function set_builtin_nil(x){ _builtin_nil = x; }
 var _builtin_pr2 = {};
+var _builtin_getter_pr2 = {}; //usage: _builtin_getter_pr2(1)(_builtin_pr2(x,y)) == x
 function set_builtin_pr2(x){ _builtin_pr2 = x; }
+function set_builtin_getter_pr2(f){ _builtin_getter_pr2 = f; } 
 var _builtin_pr3 = {};
+var _builtin_getter_pr3 = {};
 function set_builtin_pr3(x){ _builtin_pr3 = x; }
+function set_builtin_getter_pr3(f){ _builtin_getter_pr3 = f; } 
 var _builtin_pr4 = {};
+var _builtin_getter_pr4 = {};
 function set_builtin_pr4(x){ _builtin_pr4 = x; }
+function set_builtin_getter_pr4(f){ _builtin_getter_pr4 = f; } 
 var _builtin_pr5 = {};
+var _builtin_getter_pr5 = {};
 function set_builtin_pr5(x){ _builtin_pr5 = x; }
+function set_builtin_getter_pr5(f){ _builtin_getter_pr5 = f; } 
 var _builtin_pr6 = {};
+var _builtin_getter_pr6 = {};
 function set_builtin_pr6(x){ _builtin_pr6 = x; }
+function set_builtin_getter_pr6(f){ _builtin_getter_pr6 = f; } 
 var _builtin_pr7 = {};
+var _builtin_getter_pr7 = {};
 function set_builtin_pr7(x){ _builtin_pr7 = x; }
+function set_builtin_getter_pr7(f){ _builtin_getter_pr7 = f; } 
 
 var nameReg = "([a-zA-Z_][a-zA-Z0-9_]*)";
 var closedBy = function(l,str,r){ 
@@ -284,6 +296,8 @@ var splitPatList = (function(){
   }
   return function(pat){ //"pat1 , pat2 ..." at least one
     pat = pat.trim();
+    if(pat == "") {
+      return []; }
     var allPats = [];
     var lastStart = 0;
     var next = findNextComma(pat,lastStart);
@@ -308,7 +322,7 @@ function matchPattern(pat, data){
   //     | v@(pat)                    => ok
   //     | v@R{ .. }                  => ok
   //     | v@{ .. }                   => ok
-  //     | ( pat1 , pat2 )
+  //     | ( pat1 , pat2 )            => put to (pat)
   //     | x : xs 
 
 
@@ -322,8 +336,19 @@ function matchPattern(pat, data){
       return null;
     }
 
-  }else if(pat[0]=='(' && pat[pat.length-1]==')'){ //"(pat)"
-    return matchPattern(pat.slice(1,-1) ,data);
+  }else if(pat[0]=='(' && pat[pat.length-1]==')'){ //"(pats)"
+    var pats = splitPatList(pat.slice(1,-1));
+    switch(pats.length){
+      case 0:
+        console.log('error: invalid pattern: \"'+pat+'\".');
+        return null;
+      case 1:
+        return matchPattern(pat.slice(1,-1) ,data);
+      case 2:
+        if(data.fromConstructor == _builtin_pr2){
+        }else{
+          return null; }
+    }
 
   }else if((new RegExp("^"+nameReg+"@")).test(pat)){
     var wholeVar = pat.match(new RegExp("^"+nameReg+"@"))[0].slice(0,-1);
@@ -393,6 +418,12 @@ return { //exporting to quickjsfp
 , set_builtin_pr5 : set_builtin_pr5
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
+, set_builtin_getter_pr2 : set_builtin_getter_pr2
+, set_builtin_getter_pr3 : set_builtin_getter_pr3
+, set_builtin_getter_pr4 : set_builtin_getter_pr4
+, set_builtin_getter_pr5 : set_builtin_getter_pr5
+, set_builtin_getter_pr6 : set_builtin_getter_pr6
+, set_builtin_getter_pr7 : set_builtin_getter_pr7
 , curryfree : curryfree
 }
 })(); // end of quickjsfp closure
