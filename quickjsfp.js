@@ -314,16 +314,15 @@ var splitPatList = (function(){
 function matchPattern(pat, data){
   pat = pat.trim();
   // pat = v                          -> variable or Constructor or value (test by (==))
-  //     | Cnstr                      ->
   //     | []                         => ok
-  //     | (pat)                      -> haven't tested
+  //     | (pattern list)                      -> haven't tested
   //     | { f1 = pat1 , f2 = pat2 }  working
   //     | R{ pat1 , pat2 }           working
   //     | v@(pat)                    => ok
   //     | v@R{ .. }                  => ok
   //     | v@{ .. }                   => ok
-  //     | ( pat1 , pat2 )            => put to (pat)
   //     | x : xs 
+  //     | _
 
 
   //return format: [['varname',data]]
@@ -351,8 +350,14 @@ function matchPattern(pat, data){
           datas.push(getter(i)(data));
         }
         var res = [];
+        var temp = {};
         for(var i=0;i<pats.length;i++){
-          res.concat(matchPattern(pats[i],datas[i]));
+          temp = matchPattern(pats[i],datas[i]);
+          if(temp!=null){
+            res.concat(temp);
+          }else{
+            return null;
+          }
         }
         return res;
       }else{
@@ -366,12 +371,10 @@ function matchPattern(pat, data){
   }else if((new RegExp("^"+nameReg+"@")).test(pat)){
     var wholeVar = pat.match(new RegExp("^"+nameReg+"@"))[0].slice(0,-1);
     var restPat = pat.split(/@/)[1];
-    if(closedBy('(',restPat,')')){ //var@(pat)
-      var next = matchPattern(pat.slice(pat.search(/@/)+2, -1), data);
-      return next? [[wholeVar, data]].concat(next) : null;
-
-    }else if((new RegExp("^"+nameReg+"\\{.*\\}$")).test(restPat) || (restPat[0]=='{' && restPat[restPat.length-1]=='}')){
-      //var@R{...} and var@{...} pattern
+    if((new RegExp("^"+nameReg+"\\{.*\\}$")).test(restPat) //v@R{...}
+             || closedBy('{',restPat,'}')                  //v@{...}
+             || closedBy('(',restPat,')')){                //v@(pat)
+      
       var next = matchPattern(restPat,data);
       return next? [[wholeVar, data]].concat(next) : null;
     }
@@ -393,10 +396,32 @@ function matchPattern(pat, data){
 
   }else if((new RegExp("^"+nameReg+"\\{.*\\}$")).test(pat)){ //R{...}
     var recordName = pat.match(new RegExp(nameReg))[0];
-    //var allVars = pat.slice(pat.search(/\{/)+1, -1).split(",").map(function(x){return x.trim()});
-    var allFields = eval(recordName+".getters")
+    var pats = splitPatList(pat.slice(pat.search('{')+1,-1));
+    var allFields = eval(recordName+".getters");
+    if(pats.length!=allFields.length){
+      console.log('error: number of patterns doesn\'t match the record \"'+recordName+'\", at \"'+pat+'\".');
+      return null;
+    }
+    var res = [];
+    for(var i=0;i<pats.length;i++){
+      res.concat(matchPattern(pats[i], data[allFields[i]]));
+    }
+    return res;
 
-  }else if(pat[0]=='{' && pat[pat.length-1]=='}'){ //{...}
+
+  }else if(pat[0]=='{' && pat[pat.length-1]=='}'){ //{f1=pat1, f2=pat2}
+    var field_pats = splitPatList(pat.slice(1,-1)); 
+    var temp={};
+    var res = [];
+    for(var i=0;i<field_pats.length;i++){
+      temp = field_pats[i].split('=').map(function(x){return x.trim();});
+      res.concat(matchPattern(temp[1], data[temp[0]]));
+    }
+    return res;
+
+  }else{
+    console.log('error: \"'+pat+'\" is not an acceptable pattern.');
+    return null;
   }
 }
 
