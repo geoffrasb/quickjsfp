@@ -234,37 +234,21 @@ function declToCtx(decl){
 // need builtin pragma
 
 var _builtin_cons = {};
-var _builtin_head = {};
-var _builtin_tail = {};
 function set_builtin_cons(x){ _builtin_cons = x; }
-function set_builtin_head(f){ _builtin_head = f; }
-function set_builtin_tail(f){ _builtin_tail = f; }
 var _builtin_nil = {};
 function set_builtin_nil(x){ _builtin_nil = x; }
 var _builtin_pr2 = {};
-var _builtin_getter_pr2 = {}; //usage: _builtin_getter_pr2(1)(_builtin_pr2(x,y)) == x
 function set_builtin_pr2(x){ _builtin_pr2 = x; }
-function set_builtin_getter_pr2(f){ _builtin_getter_pr2 = f; } 
 var _builtin_pr3 = {};
-var _builtin_getter_pr3 = {};
 function set_builtin_pr3(x){ _builtin_pr3 = x; }
-function set_builtin_getter_pr3(f){ _builtin_getter_pr3 = f; } 
 var _builtin_pr4 = {};
-var _builtin_getter_pr4 = {};
 function set_builtin_pr4(x){ _builtin_pr4 = x; }
-function set_builtin_getter_pr4(f){ _builtin_getter_pr4 = f; } 
 var _builtin_pr5 = {};
-var _builtin_getter_pr5 = {};
 function set_builtin_pr5(x){ _builtin_pr5 = x; }
-function set_builtin_getter_pr5(f){ _builtin_getter_pr5 = f; } 
 var _builtin_pr6 = {};
-var _builtin_getter_pr6 = {};
 function set_builtin_pr6(x){ _builtin_pr6 = x; }
-function set_builtin_getter_pr6(f){ _builtin_getter_pr6 = f; } 
 var _builtin_pr7 = {};
-var _builtin_getter_pr7 = {};
 function set_builtin_pr7(x){ _builtin_pr7 = x; }
-function set_builtin_getter_pr7(f){ _builtin_getter_pr7 = f; } 
 
 var nameReg = "([a-zA-Z_][a-zA-Z0-9_]*)";
 var closedBy = function(l,str,r){ 
@@ -347,15 +331,10 @@ function matchPattern(pat, data){
       return matchPattern(pat.slice(1,-1) ,data); 
     }else if(pats.length <=7){
       if(data.fromConstructor == eval("_builtin_pr"+pats.length)){
-        var datas = [];
-        var getter = eval("_builtin_getter_pr"+pats.length);
-        for(var i =0;i<pats.length;i++){
-          datas.push(getter(i)(data));
-        }
         var res = [];
         var temp = {};
         for(var i=0;i<pats.length;i++){
-          temp = matchPattern(pats[i],datas[i]);
+          temp = matchPattern(pats[i],data.args[i]);
           if(temp!=null){
             res.concat(temp);
           }else{
@@ -463,14 +442,18 @@ function module(modname){
 
   //!arguments checking
 
-  var decls = arguments.slice(1,arguments.length);
+  var decls = arguments.slice(1,-1);
   var modulebody = arguments[arguments.length-1];
 
   var contexts = decls.map(function(x){ return declToCtx(parseDecl(x));}); 
   //a context :: a table of symbol to be used in the module body
 
- return curryfree(alterCtx(contexts, modulebody));
-
+  if(modulebody.length==0){
+    // {_exported:[f1,f2...], f1:..., f2:...}
+    return null // alterCtx(contexts, modulebody)();
+  }else{
+    return null // curryfree(alterCtx(contexts, modulebody));
+  }
 
 }
 
@@ -478,8 +461,6 @@ function module(modname){
 return { //exporting to quickjsfp
   module : module
 , set_builtin_cons : set_builtin_cons
-, set_builtin_head : set_builtin_head
-, set_builtin_tail : set_builtin_tail
 , set_builtin_nil : set_builtin_nil
 , set_builtin_pr2 : set_builtin_pr2
 , set_builtin_pr3 : set_builtin_pr3
@@ -487,15 +468,24 @@ return { //exporting to quickjsfp
 , set_builtin_pr5 : set_builtin_pr5
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
-, set_builtin_getter_pr2 : set_builtin_getter_pr2
-, set_builtin_getter_pr3 : set_builtin_getter_pr3
-, set_builtin_getter_pr4 : set_builtin_getter_pr4
-, set_builtin_getter_pr5 : set_builtin_getter_pr5
-, set_builtin_getter_pr6 : set_builtin_getter_pr6
-, set_builtin_getter_pr7 : set_builtin_getter_pr7
 , curryfree : curryfree
 }
 })(); // end of quickjsfp closure
+
+ListMod = 
+  module( "List/0"
+  , "data List = Nil/0 | Cons/2"
+  , function(){
+    
+    return exporting(List)({
+        head : lamcases('x:xs', function(){ return x; })
+      , tail : lamcases('x:xs', function(){ return xs; })
+    });
+  });
+quickjsfp.set_builtin_cons = ListMod.Cons;
+quickjsfp.set_builtin_nil = ListMod.Nil;
+
+
 
 // built-in modules
 
