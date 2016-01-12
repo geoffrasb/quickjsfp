@@ -218,7 +218,7 @@ function declToCtx(decl){
         res[decl.fields[i]] = eval("(function(x){ return x[\'"+decl.fields[i]+"\']; })");
         cnstrRaw += (i==0?"":", ") + decl.fields[i]+" : "+vars[i]+"\n";
       }
-      res[decl.recordname] = eval(cnstrRaw+"}})");
+      res[decl.recordname] = curryfree(eval(cnstrRaw+"}})"));
       res[decl.recordname]["intermediateDatatype"] = "record";
       res[decl.recordname]["getters"] = decl.fields;
 
@@ -230,8 +230,9 @@ function declToCtx(decl){
 
 //---------------------------------------------------------------------------------------------------
 
+
+
 // bulit-in functions
-// need builtin pragma
 
 var _builtin_cons = {};
 function set_builtin_cons(x){ _builtin_cons = x; }
@@ -249,6 +250,26 @@ var _builtin_pr6 = {};
 function set_builtin_pr6(x){ _builtin_pr6 = x; }
 var _builtin_pr7 = {};
 function set_builtin_pr7(x){ _builtin_pr7 = x; }
+
+// testingData 
+var lst0 = {fromConstructor : _builtin_nil, args : [] }
+var lst1 = {fromConstructor : _builtin_cons, args : [1, lst0]}
+var lst2 = {fromConstructor : _builtin_cons, args : [2, lst1]}
+var pr12 = {fromConstructor : _builtin_pr2, args : [1,2]}
+var pr123 = {fromConstructor : _builtin_pr3, args : [1,2,3]}
+var Rf1f2 = curryfree(function(a,b){ return { f1 : a, f2 : b}});
+Rf1f2['intermediateDatatype'] = "record";
+Rf1f2['getters'] = ["f1","f2"];
+var rf1f2 = Rf1f2(1,2);
+var f1f2f3 = {f1 : 'a', f2:'b',f3'c'};
+var C1 = function(x){ return {fromConstructor:C1, args:[x]}};
+C1['constructorName'] = 'C1';
+var C2 = curryfree(function(x,y){ return {fromConstructor:C2, args:[x,y]}});
+C2['constructorName'] = 'C2';
+var T1 = {intermediateDatatype:"data", constructors: [["C1",C1], ["C2",C2]]}
+//[(T1,Rf1f2)]
+//(Rf1f2,[T1])
+
 
 var nameReg = "([a-zA-Z_][a-zA-Z0-9_]*)";
 var closedBy = function(l,str,r){ 
@@ -310,6 +331,8 @@ function matchPattern(pat, data){
   //     | v@{ .. }                   => ok
   //     | x : xs                     -> haven't tested
   //     | _                          -> haven't tested
+  //     | "str"
+  //     | 123
 
 
   //return format: [['varname',data]]
@@ -418,21 +441,32 @@ function matchPattern(pat, data){
       return null;
     }
     var colonInd = findNextSplit(':',pat,0);
-    var head = matchPattern(pat.slice(0,colonInd).trim(), _builtin_head(data));
-    var tail = matchPattern(pat.slice(colonInd+1).trim(), _builtin_tail(data));
+    var head = matchPattern(pat.slice(0,colonInd).trim(), data.args[0]);
+    var tail = matchPattern(pat.slice(colonInd+1).trim(), data.args[1]);
     if(head==null || tail==null){
       return null;
     }else{
       return head.concat(tail);
     }
 
+  }else if(closedBy('\'',pat,'\'') || closedBy('\"',pat,'\"') || !isNaN(parseFloat(pat))){
+    if(eval(pat) == data){
+      return [];
+    }else{
+      return null;
+    }
   }else{
     console.log('error: \"'+pat+'\" is not an acceptable pattern.');
     return null;
   }
 }
 
+//-----------------------------------------------------------------------------------------
 
+// function lam
+// function cases
+// function ll
+// function lp
 
 
 function module(modname){
@@ -472,18 +506,43 @@ return { //exporting to quickjsfp
 }
 })(); // end of quickjsfp closure
 
-ListMod = 
-  module( "List/0"
-  , "data List = Nil/0 | Cons/2"
-  , function(){
+
+
+// var ListMod = 
+//   module( "List/0"
+//   , "data List = Nil/0 | Cons/2"
+//   , function(){
     
-    return exporting(List)({
-        head : lamcases('x:xs', function(){ return x; })
-      , tail : lamcases('x:xs', function(){ return xs; })
-    });
-  });
-quickjsfp.set_builtin_cons = ListMod.Cons;
-quickjsfp.set_builtin_nil = ListMod.Nil;
+//     return exporting(List)({
+//         head : lam('x:xs', function(){ return x; })
+//       , tail : lam('x:xs', function(){ return xs; })
+//     });
+//   });
+// quickjsfp.set_builtin_cons = ListMod.Cons;
+// quickjsfp.set_builtin_nil = ListMod.Nil;
+
+// var TPr2Mod =
+//   module( "TPr2Mod/0"
+//   , "data TPr2 = Pr2/2"
+//   , function(){
+//     return exporting(TPr2)({
+//         fst : lam('(x,_)', function(){ return x; })
+//       , snd : lam('(_,y)', function(){ return y; })
+//     });
+//   });
+// quickjsfp.set_builtin_pr2(TPr2Mod.Pr2);
+
+// var TPr3Mod =
+//   module( "TPr3Mod/0"
+//   , "data TPr3 = Pr3/3"
+//   , function(){
+//     return exporting(TPr3)({
+//         fst3 : lam('(x,_,_)', function(){ return x; })
+//       , snd3 : lam('(_,y,_)', function(){ return y; })
+//       , thd3 : lam('(_,_,z)', function(){ return z; })
+//     });
+//   });
+// quickjsfp.set_builtin_pr3(TPr3Mod.Pr3);
 
 
 
@@ -495,7 +554,6 @@ quickjsfp.set_builtin_nil = ListMod.Nil;
 // functions to implement:
 // cases
 // lam
-// lamcases
 // ll
 // lp
 // comp
