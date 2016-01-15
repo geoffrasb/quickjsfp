@@ -379,7 +379,7 @@ function matchPattern(pat, data){
         for(var i=0;i<pats.length;i++){
           temp = matchPattern(pats[i],data.args[i]);
           if(temp!=null){
-            res.concat(temp);
+            res = res.concat(temp);
           }else{
             return null;
           }
@@ -432,7 +432,7 @@ function matchPattern(pat, data){
     for(var i=0;i<pats.length;i++){
       temp = matchPattern(pats[i], data[allFields[i]]);
       if(temp!=null){
-        res.concat(temp);
+        res = res.concat(temp);
       }else{
         return null;
       }
@@ -448,7 +448,7 @@ function matchPattern(pat, data){
       temp = field_pats[i].split('=').map(function(x){return x.trim();});
       temp2 = matchPattern(temp[1], data[temp[0]]);
       if(temp2!=null){
-        res.concat(temp2);
+        res = res.concat(temp2);
       }else{
         return null;
       }
@@ -485,7 +485,7 @@ function matchPattern(pat, data){
         for(var i in restPats){
           temp = matchPattern(restPats[i],data.args[i]);
           if(temp == null) return null;
-          res.concat(temp);
+          res = res.concat(temp);
         }
         return res;
       }else{
@@ -504,16 +504,23 @@ function matchPattern(pat, data){
 //-----------------------------------------------------------------------------------------
 
 function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
-  //lampattern:
-  // const1 
-  // v1
-  // (pats) 
-  // v@(pat)
-  // v@R{..}
-  // v@{..}
-  // []
-  // R{..}, {..}
-  // _
+  var datas = arguments;
+  return function(){
+    var matchEnd = false;
+    var i = 0;
+    var parsedPats = {};
+    var varBindings = [];
+    var temp = {};
+    while(!matchEnd){
+      parsedPats = parseSpacedPatterns(arguments[i]);
+      for(var j in datas){
+        temp = matchPattern(parsedPats[i], datas[i]);
+        if(temp==null){
+        }
+        varBindings = varBindings.concat(temp);
+      }
+    }
+  }
 }
 // function lam
 // function ll
