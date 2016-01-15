@@ -261,7 +261,7 @@ var Rf1f2 = curryfree(function(a,b){ return { f1 : a, f2 : b}});
 Rf1f2['intermediateDatatype'] = "record";
 Rf1f2['getters'] = ["f1","f2"];
 var rf1f2 = Rf1f2(1,2);
-var f1f2f3 = {f1 : 'a', f2:'b',f3'c'};
+var f1f2f3 = {f1 : 'a', f2:'b',f3:'c'};
 var C1 = function(x){ return {fromConstructor:C1, args:[x]}};
 C1['constructorName'] = 'C1';
 var C2 = curryfree(function(x,y){ return {fromConstructor:C2, args:[x,y]}});
@@ -286,9 +286,10 @@ var revPar = function(par){
     return null;
   }
 var findNextSplit = function(symb,str,start){
-  var parRecord = []; // excluding commas in () and {}
+  var parRecord = []; // excluding symb in () and {}
+  var spreg = new RegExp(symb);
   for(var i = start; i<str.length; i++){
-    if(str[i] == symb && parRecord.length == 0){
+    if(spreg.test(str[i]) && parRecord.length == 0){
       return i;
     }else if(str[i]=='(' || str[i]=='{'){
       parRecord.push(str[i]);
@@ -319,6 +320,24 @@ var splitPatList = function(pat){ //"pat1 , pat2 ..." at least one
   return allPats;
 }
 
+var parseSpacedPatterns = function(pat){
+  pat = pat.trim();
+  var res = [];
+  var lasti = 0;
+  var next = findNextSplit('\\s', pat, lasti);
+  while(next != -1){
+    res.push(pat.slice(lasti,next).trim());
+    lasti = next;
+    next = findNextSplit('\\s',pat, next+1);
+  }
+  res.push(pat.slice(lasti).trim());
+  var cleared = [];
+  for(var i in res){
+    if(res[i]!="") cleared.push(res[i]);
+  }
+  return cleared;
+}
+
 function matchPattern(pat, data){
   pat = pat.trim();
   // pat = v                          -> variable or Constructor or value (test by (==))
@@ -333,6 +352,7 @@ function matchPattern(pat, data){
   //     | _                          -> haven't tested
   //     | "str"
   //     | 123
+  //     | C f1 f2
 
 
   //return format: [['varname',data]]
@@ -455,6 +475,26 @@ function matchPattern(pat, data){
     }else{
       return null;
     }
+  }else if((new RegExp("^"+nameReg)).test(pat)){
+    var cnstrName = pat.match(new RegExp("^"+nameReg))[0];
+    var restPats = parseSpacedPatterns(pat.slice(pat.search(' ')));
+    try{
+      if(data.fromConstructor == eval(cnstrName) && restPats.length == data.args.length){
+        var res = [];
+        var temp = {};
+        for(var i in restPats){
+          temp = matchPattern(restPats[i],data.args[i]);
+          if(temp == null) return null;
+          res.concat(temp);
+        }
+        return res;
+      }else{
+        return null;
+      }
+    }catch(e){ 
+      console.log('error: possibly using undefined constructors');
+      return null;
+    }
   }else{
     console.log('error: \"'+pat+'\" is not an acceptable pattern.');
     return null;
@@ -463,8 +503,19 @@ function matchPattern(pat, data){
 
 //-----------------------------------------------------------------------------------------
 
+function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
+  //lampattern:
+  // const1 
+  // v1
+  // (pats) 
+  // v@(pat)
+  // v@R{..}
+  // v@{..}
+  // []
+  // R{..}, {..}
+  // _
+}
 // function lam
-// function cases
 // function ll
 // function lp
 
@@ -503,6 +554,8 @@ return { //exporting to quickjsfp
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
 , curryfree : curryfree
+, findNextSplit
+, parseSpacedPatterns
 }
 })(); // end of quickjsfp closure
 
