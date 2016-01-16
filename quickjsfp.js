@@ -26,29 +26,28 @@ function alterCtx(ctxs,f){
   return eval(fstr);
 }
 
-
 function curryfree(f){
-  if(f._length == null){
-    f['_length'] = f.length; }
-
-  var F = function(){
-    var thisF = arguments.callee;
-    var restArity = thisF._length - arguments.length;
-    if(restArity <=0){
-      return f.apply(this,arguments);
-    }else{
-      var curArgs = [];
-      for(var i in arguments){ curArgs.push(arguments[i]); }
-
-      var nextF = function(){
-        for(var i in arguments){ curArgs.push(arguments[i]); }
-        return f.apply(this, curArgs);
-      }
-      nextF['_length'] = restArity;
-      return curryfree(nextF);
-    }
+  if(f.length == 0){
+    return f;
   }
-  F['_length'] = f._length;
+
+  var F = eval("(function(" + genVars(f.length) + "){"              +
+    "var thisF = arguments.callee;"                                 +
+    "var restArity = thisF.length - arguments.length;"              +
+    "if(restArity <=0){"                                            +
+      "return f.apply(this,arguments);"                             +
+    "}else{"                                                        +
+      "var curArgs = [];"                                           +
+      "for(var i in arguments){ curArgs.push(arguments[i]); }"      +
+
+      "var nextF = eval(\"(function(\"+ genVars(restArity)+\"){\"+" +
+      " \"for(var i in arguments){ curArgs.push(arguments[i]);}\"+" +
+      "  \"return f.apply(this, curArgs);\"                      +" +
+      "\"})\");"                                                    +
+      "return curryfree(nextF);"                                    +
+    "}"                                                             +
+  "})")
+
   return F;
 }
 // ---------------------------------------------------------------------------------------------
@@ -510,12 +509,14 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
     var i = 0;
     var parsedPats = {};
     var varBindings = [];
-    var temp = {};
+    var patSuc,temp = {};
     while(!matchEnd){
       parsedPats = parseSpacedPatterns(arguments[i]);
+      patSuc = false;
       for(var j in datas){
         temp = matchPattern(parsedPats[i], datas[i]);
         if(temp==null){
+          break;
         }
         varBindings = varBindings.concat(temp);
       }
@@ -561,6 +562,7 @@ return { //exporting to quickjsfp
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
 , curryfree : curryfree
+, curryfree2 : curryfree2
 , findNextSplit
 , parseSpacedPatterns
 }
