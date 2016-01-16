@@ -500,33 +500,67 @@ function matchPattern(pat, data){
   }
 }
 
+function matchPatterns(pats, datas){
+  //pats.length == datas.length
+  var temp = {};
+  var varBindings = [];
+  for(var i in pats){
+    temp = matchPattern(pats[i], datas[i]);
+    if(temp == null) return null;
+    varBindings = varBindings.concat(temp);
+  }
+  return varBindings;
+}
+
 //-----------------------------------------------------------------------------------------
+
+
 
 function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
   var datas = arguments;
+
   return function(){
-    var matchEnd = false;
-    var i = 0;
-    var parsedPats = {};
     var varBindings = [];
-    var patSuc,temp = {};
-    while(!matchEnd){
-      parsedPats = parseSpacedPatterns(arguments[i]);
-      patSuc = false;
-      for(var j in datas){
-        temp = matchPattern(parsedPats[i], datas[i]);
-        if(temp==null){
-          break;
-        }
-        varBindings = varBindings.concat(temp);
+    var funclst = patlst = [];
+    for(var i in arguments){
+      (i%2? funclst : patlst).push(arguments[i]);
+    }
+    // funclst.length == patlst.length
+    var matchFin = false;
+    var temp = {};
+    for(var i in patlst){
+      temp = matchPatterns(parseSpacedPatterns(patlst[i]), datas);
+      if(temp!=null){
+        return alterCtx([bindsToCtx(temp)], funclst[i])();
       }
     }
+    console.log('error: no appropriate pattern to match');
+    return null;
   }
 }
-// function lam
-// function ll
-// function lp
 
+function lam(/*args*/){ //(pat,func,pat,func...
+  var len = parseSpacedPatterns(arguments[0]).length;
+  var vars = genVars(len);
+  return eval("(function("+vars+"){ return cases("+vars+").apply(this,arguments); })")()
+}
+
+function ll(/*args*/){ // mimicing literal list
+  var res = _builtin_nil();
+  for(var i = arguments.length-1; i>=0; i--){
+    res = _builtin_cons(arguments[i], res);
+  }
+  return res;
+}
+
+function lt(/*args*/){ //mimicing literal tuples
+  if(arguments.length > 1 && arguments.length <=7){
+    return eval("_builtin_pr"+ arguments.length +".apply(this, arguments);");
+  }else{
+    console.log('error: lt accepts only 2~7 items.');
+    return null;
+  }
+}
 
 function module(modname){
   //length of arguments should be at least one(modname),
@@ -562,7 +596,6 @@ return { //exporting to quickjsfp
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
 , curryfree : curryfree
-, curryfree2 : curryfree2
 , findNextSplit
 , parseSpacedPatterns
 }
