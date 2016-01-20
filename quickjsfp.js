@@ -163,7 +163,7 @@ function declToCtx(decl){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
         res[cnstrName] = curryfree(eval("(function("+genVars(cnstrArity).toString()+"){\n" +
-          "return { fromConstructor:"+cnstrName+"\n" +
+          "return { fromConstructor: arguments.callee\n" +
           ", args: arguments } })"));
         res[cnstrName]["constructorName"] = cnstrName;
         res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
@@ -266,6 +266,7 @@ C1['constructorName'] = 'C1';
 var C2 = curryfree(function(x,y){ return {fromConstructor:C2, args:[x,y]}});
 C2['constructorName'] = 'C2';
 var T1 = {intermediateDatatype:"data", constructors: [["C1",C1], ["C2",C2]]}
+
 //[(T1,Rf1f2)]
 //(Rf1f2,[T1])
 
@@ -542,7 +543,7 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
 function lam(/*args*/){ //(pat,func,pat,func...
   var len = parseSpacedPatterns(arguments[0]).length;
   var vars = genVars(len);
-  return eval("(function("+vars+"){ return cases("+vars+").apply(this,arguments); })")()
+  return eval("(function("+vars+"){ return cases("+vars+").apply(this,arguments); })")
 }
 
 function ll(/*args*/){ // mimicing literal list
@@ -557,7 +558,7 @@ function lt(/*args*/){ //mimicing literal tuples
   if(arguments.length > 1 && arguments.length <=7){
     return eval("_builtin_pr"+ arguments.length +".apply(this, arguments);");
   }else{
-    console.log('error: lt accepts only 2~7 items.');
+    console.log('error: function \'lt\' accepts only 2~7 items.');
     return null;
   }
 }
@@ -569,17 +570,38 @@ function module(modname){
 
   //!arguments checking
 
-  var decls = arguments.slice(1,-1);
-  var modulebody = arguments[arguments.length-1];
+  var args = [];
+  for(var i in arguments){
+    args.push(arguments[i]);
+  }
+
+  var decls = args.slice(1,-1);
+  var modulebody = args[arguments.length-1];
 
   var contexts = decls.map(function(x){ return declToCtx(parseDecl(x));}); 
   //a context :: a table of symbol to be used in the module body
 
   if(modulebody.length==0){
     // {_exported:[f1,f2...], f1:..., f2:...}
-    return null // alterCtx(contexts, modulebody)();
+    var res = alterCtx(contexts, modulebody)();
+    var exp = [];
+    for(var k in res){
+      exp.push(k);
+    }
+    res['_exported'] = exp;
+    return res;
   }else{
-    return null // curryfree(alterCtx(contexts, modulebody));
+    var runbody = alterCtx(contexts, modulebody);
+    var addexp = eval("(function("+genVars(modulebody.length)+"){" +
+      "var res = runbody.apply(this,arguments)"                    +
+      "var exp = [];"                                              +
+      "for(var k in res){"                                         +
+      "  exp.push(k);"                                             +
+      "}"                                                          +
+      "res[\'_exported\'] = exp;"                                  +
+      "return res;"                                                +
+    "})");
+    return curryfree(addexp);
   }
 
 }
@@ -596,25 +618,29 @@ return { //exporting to quickjsfp
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
 , curryfree : curryfree
-, findNextSplit
-, parseSpacedPatterns
+, cases : cases
+, lam : lam
+, ll : ll
+, lt : lt
 }
 })(); // end of quickjsfp closure
 
+for(var k in quickjsfp){
+  window[k] = quickjsfp[k];
+}
 
-
-// var ListMod = 
-//   module( "List/0"
-//   , "data List = Nil/0 | Cons/2"
-//   , function(){
+var ListMod = 
+  module( "List/0"
+  , "data List = Nil/0 | Cons/2"
+  , function(){
     
-//     return exporting(List)({
-//         head : lam('x:xs', function(){ return x; })
-//       , tail : lam('x:xs', function(){ return xs; })
-//     });
-//   });
-// quickjsfp.set_builtin_cons = ListMod.Cons;
-// quickjsfp.set_builtin_nil = ListMod.Nil;
+    return exporting(List)({
+        head : lam('x:xs', function(){ return x; })
+      , tail : lam('x:xs', function(){ return xs; })
+    });
+  });
+set_builtin_cons(ListMod.Cons);
+set_builtin_nil(ListMod.Nil);
 
 // var TPr2Mod =
 //   module( "TPr2Mod/0"
