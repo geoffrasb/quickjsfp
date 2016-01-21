@@ -162,9 +162,14 @@ function declToCtx(decl){
       for(var i in decl.constructors){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
-        var f = eval("curryfree(function("+genVars(cnstrArity).toString()+"){\n" +
-                                 "return { fromConstructor: f\n" +
-                                        ", args: arguments } })");
+        var f;
+        if(cnstrArity==0){ // consturctor with arity=0, cnstr()==cnstr
+          f = {fromConstructor:null, args:[]};
+        }else{
+          f = eval("curryfree(function("+genVars(cnstrArity).toString()+"){\n" +
+                               "return { fromConstructor: f\n" +
+                                      ", args: arguments } })");
+        }
         res[cnstrName] = f;
         res[cnstrName]["constructorName"] = cnstrName;
         res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
@@ -343,7 +348,7 @@ var parseSpacedPatterns = function(pat){
 
 function matchPattern(pat, data){
   pat = pat.trim();
-  // pat = v                          -> variable or Constructor or value (test by (==))
+  // pat = v                          -> variable or Constructor with arity=0
   //     | []                         => ok
   //     | (pattern list)             -> haven't tested
   //     | { f1 = pat1 , f2 = pat2 }  -> haven't tested
@@ -356,7 +361,7 @@ function matchPattern(pat, data){
   //     | "str"
   //     | 123
   //     | C f1 f2
-  //     | .data
+  //     | .data                      -> value pattern, checked with (==)
 
 
   //return format: [['varname',data]]
@@ -419,8 +424,8 @@ function matchPattern(pat, data){
   }else if((new RegExp("^"+nameReg+"$")).test(pat)){ //"v1"
     try{
       var intrptPat = eval(pat);
-      if(typeof intrptPat == "function" && /./.test(intrptPat.constructorName)){
-        return (data.fromConstructor===intrptPat)? [] : null;
+      if(intrptPat.fromConstructor==null){ // test if it's a constructor with arity=0
+        return (data===intrptPat)? [] : null;
       }else{
         return [[pat, data]];
       }
