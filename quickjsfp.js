@@ -572,20 +572,30 @@ function lam(/*args*/){ //(pat,func,pat,func...
 }
 
 function ll(/*args*/){ // mimicing literal list
-  var res = _builtin_nil();
+  var res = _builtins._builtin_nil;
   for(var i = arguments.length-1; i>=0; i--){
-    res = _builtin_cons(arguments[i], res);
+    res = _builtins._builtin_cons(arguments[i], res);
   }
   return res;
 }
 
 function lt(/*args*/){ //mimicing literal tuples
   if(arguments.length > 1 && arguments.length <=7){
-    return eval("_builtin_pr"+ arguments.length +".apply(this, arguments);");
+    return eval("_builtins._builtin_pr"+ arguments.length +".apply(this, arguments);");
   }else{
     console.log('error: function \'lt\' accepts only 2~7 items.');
     return null;
   }
+}
+
+function cp(/*args*/){ //composing functions
+  var funcs = [];
+  for(var i in arguments){
+    funcs.unshift(arguments[i]);
+  }
+  return curryfree(function(x){
+    return funcs.reduce(function(b,a){return a(b);}, x);
+  });
 }
 
 function module(modname){
@@ -631,9 +641,12 @@ function module(modname){
 
 }
 
+function setModule(env){
+  return alterCtx([env], module);
+}
 
 return { //exporting to quickjsfp
-  module : module
+  setModule : setModule
 , set_builtin_cons : set_builtin_cons
 , set_builtin_nil : set_builtin_nil
 , set_builtin_pr2 : set_builtin_pr2
@@ -642,17 +655,20 @@ return { //exporting to quickjsfp
 , set_builtin_pr5 : set_builtin_pr5
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
-, _builtins : _builtins
 , curryfree : curryfree
 , cases : cases
 , lam : lam
 , ll : ll
 , lt : lt
+, cp : cp
 }
 })(); // end of quickjsfp closure
 
-for(var k in quickjsfp){
-  window[k] = quickjsfp[k];
+var module = quickjsfp.setModule(quickjsfp);
+function open2window(obj){
+  for(var i in obj){
+    window[i] = obj[i];
+  }
 }
 
 var ListMod = 
