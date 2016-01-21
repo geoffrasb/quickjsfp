@@ -162,9 +162,10 @@ function declToCtx(decl){
       for(var i in decl.constructors){
         var cnstrArity = decl.constructors[i][1];
         var cnstrName = decl.constructors[i][0];
-        res[cnstrName] = curryfree(eval("(function("+genVars(cnstrArity).toString()+"){\n" +
-          "return { fromConstructor: arguments.callee\n" +
-          ", args: arguments } })"));
+        var f = eval("curryfree(function("+genVars(cnstrArity).toString()+"){\n" +
+                                 "return { fromConstructor: f\n" +
+                                        ", args: arguments } })");
+        res[cnstrName] = f;
         res[cnstrName]["constructorName"] = cnstrName;
         res[decl.typename].constructors.push([cnstrName,res[cnstrName]]);
       }
@@ -232,40 +233,42 @@ function declToCtx(decl){
 
 
 // bulit-in functions
+var _builtins = {
+    _builtin_cons : {}
+  , _builtin_nil : {}
+  , _builtin_pr2 : {}
+  , _builtin_pr3 : {}
+  , _builtin_pr4 : {}
+  , _builtin_pr5 : {}
+  , _builtin_pr6 : {}
+  , _builtin_pr7 : {}
+}
+function set_builtin_pr2(x){ _builtins._builtin_pr2 = x; }
+function set_builtin_pr3(x){ _builtins._builtin_pr3 = x; }
+function set_builtin_pr4(x){ _builtins._builtin_pr4 = x; }
+function set_builtin_pr5(x){ _builtins._builtin_pr5 = x; }
+function set_builtin_pr6(x){ _builtins._builtin_pr6 = x; }
+function set_builtin_pr7(x){ _builtins._builtin_pr7 = x; }
 
-var _builtin_cons = {};
-function set_builtin_cons(x){ _builtin_cons = x; }
-var _builtin_nil = {};
-function set_builtin_nil(x){ _builtin_nil = x; }
-var _builtin_pr2 = {};
-function set_builtin_pr2(x){ _builtin_pr2 = x; }
-var _builtin_pr3 = {};
-function set_builtin_pr3(x){ _builtin_pr3 = x; }
-var _builtin_pr4 = {};
-function set_builtin_pr4(x){ _builtin_pr4 = x; }
-var _builtin_pr5 = {};
-function set_builtin_pr5(x){ _builtin_pr5 = x; }
-var _builtin_pr6 = {};
-function set_builtin_pr6(x){ _builtin_pr6 = x; }
-var _builtin_pr7 = {};
-function set_builtin_pr7(x){ _builtin_pr7 = x; }
+function set_builtin_nil(x){ _builtins._builtin_nil = x; }
+function set_builtin_cons(x){ _builtins._builtin_cons = x; }
 
 // testingData 
-var lst0 = {fromConstructor : _builtin_nil, args : [] }
-var lst1 = {fromConstructor : _builtin_cons, args : [1, lst0]}
-var lst2 = {fromConstructor : _builtin_cons, args : [2, lst1]}
-var pr12 = {fromConstructor : _builtin_pr2, args : [1,2]}
-var pr123 = {fromConstructor : _builtin_pr3, args : [1,2,3]}
-var Rf1f2 = curryfree(function(a,b){ return { f1 : a, f2 : b}});
-Rf1f2['intermediateDatatype'] = "record";
-Rf1f2['getters'] = ["f1","f2"];
-var rf1f2 = Rf1f2(1,2);
-var f1f2f3 = {f1 : 'a', f2:'b',f3:'c'};
-var C1 = function(x){ return {fromConstructor:C1, args:[x]}};
-C1['constructorName'] = 'C1';
-var C2 = curryfree(function(x,y){ return {fromConstructor:C2, args:[x,y]}});
-C2['constructorName'] = 'C2';
-var T1 = {intermediateDatatype:"data", constructors: [["C1",C1], ["C2",C2]]}
+// var lst0 = {fromConstructor : _builtin_nil, args : [] }
+// var lst1 = {fromConstructor : _builtin_cons, args : [1, lst0]}
+// var lst2 = {fromConstructor : _builtin_cons, args : [2, lst1]}
+// var pr12 = {fromConstructor : _builtin_pr2, args : [1,2]}
+// var pr123 = {fromConstructor : _builtin_pr3, args : [1,2,3]}
+// var Rf1f2 = curryfree(function(a,b){ return { f1 : a, f2 : b}});
+// Rf1f2['intermediateDatatype'] = "record";
+// Rf1f2['getters'] = ["f1","f2"];
+// var rf1f2 = Rf1f2(1,2);
+// var f1f2f3 = {f1 : 'a', f2:'b',f3:'c'};
+// var C1 = function(x){ return {fromConstructor:C1, args:[x]}};
+// C1['constructorName'] = 'C1';
+// var C2 = curryfree(function(x,y){ return {fromConstructor:C2, args:[x,y]}});
+// C2['constructorName'] = 'C2';
+// var T1 = {intermediateDatatype:"data", constructors: [["C1",C1], ["C2",C2]]}
 
 //[(T1,Rf1f2)]
 //(Rf1f2,[T1])
@@ -353,13 +356,20 @@ function matchPattern(pat, data){
   //     | "str"
   //     | 123
   //     | C f1 f2
+  //     | .data
 
 
   //return format: [['varname',data]]
   
-  
-  if(/^\[\]$/.test(pat)){  //"[]"
-    if(data.fromConstructor == _builtin_nil){
+  if(pat[0] == '.'){ //".data"
+    var isdata = eval(pat.slice(1));
+    if(isdata == data){
+      return [];
+    }else{
+      return null;
+    }
+  }else if(/^\[\]$/.test(pat)){  //"[]"
+    if(data.fromConstructor == _builtins._builtin_nil){
       return []; }
     else{
       return null;
@@ -373,7 +383,7 @@ function matchPattern(pat, data){
     }else if(pats.length == 1){
       return matchPattern(pat.slice(1,-1) ,data); 
     }else if(pats.length <=7){
-      if(data.fromConstructor == eval("_builtin_pr"+pats.length)){
+      if(data.fromConstructor == eval("_builtins._builtin_pr"+pats.length)){
         var res = [];
         var temp = {};
         for(var i=0;i<pats.length;i++){
@@ -411,10 +421,9 @@ function matchPattern(pat, data){
       var intrptPat = eval(pat);
       if(typeof intrptPat == "function" && /./.test(intrptPat.constructorName)){
         return (data.fromConstructor===intrptPat)? [] : null;
-      }else if(data == intrptPat){
-        return [];
       }else{
-        return null;}
+        return [[pat, data]];
+      }
     }catch(e){
       return [[pat, data]];
     }
@@ -457,7 +466,7 @@ function matchPattern(pat, data){
   }else if(pat == "_"){
     return [];
   }else if(findNextSplit(':',pat,0)!=-1){ // pat : pat
-    if(data.fromConstructor != _builtin_cons){
+    if(data.fromConstructor != _builtins._builtin_cons){
       return null;
     }
     var colonInd = findNextSplit(':',pat,0);
@@ -514,7 +523,13 @@ function matchPatterns(pats, datas){
 }
 
 //-----------------------------------------------------------------------------------------
-
+function bindsToCtx(binds){
+  var res = {};
+  for(var i in binds){
+    res[binds[i][0]] = binds[i][1];
+  }
+  return res;
+}
 
 
 function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
@@ -522,7 +537,8 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
 
   return function(){
     var varBindings = [];
-    var funclst = patlst = [];
+    var patlst = [];
+    var funclst = [];
     for(var i in arguments){
       (i%2? funclst : patlst).push(arguments[i]);
     }
@@ -543,7 +559,11 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
 function lam(/*args*/){ //(pat,func,pat,func...
   var len = parseSpacedPatterns(arguments[0]).length;
   var vars = genVars(len);
-  return eval("(function("+vars+"){ return cases("+vars+").apply(this,arguments); })")
+  var args = [];
+  for(var i in arguments){
+    args.push(arguments[i]);
+  }
+  return eval("(function("+vars+"){ return cases("+vars+").apply(this,args); })")
 }
 
 function ll(/*args*/){ // mimicing literal list
@@ -617,6 +637,7 @@ return { //exporting to quickjsfp
 , set_builtin_pr5 : set_builtin_pr5
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
+, _builtins : _builtins
 , curryfree : curryfree
 , cases : cases
 , lam : lam
@@ -633,14 +654,16 @@ var ListMod =
   module( "List/0"
   , "data List = Nil/0 | Cons/2"
   , function(){
+
+    set_builtin_cons(Cons);
+    set_builtin_nil(Nil);
     
     return exporting(List)({
         head : lam('x:xs', function(){ return x; })
       , tail : lam('x:xs', function(){ return xs; })
     });
   });
-set_builtin_cons(ListMod.Cons);
-set_builtin_nil(ListMod.Nil);
+
 
 // var TPr2Mod =
 //   module( "TPr2Mod/0"
