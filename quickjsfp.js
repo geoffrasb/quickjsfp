@@ -12,6 +12,16 @@ function genVars(n){
   return res;
 }
 
+function mergeTables(tables){ // if exists repeated variables, take the value of the last one
+  var res = {};
+  for(var i in tables){
+    for(var k in tables[i]){
+      res[k] = tables[i][k];
+    }
+  }
+  return res;
+}
+
 function alterCtx(ctxs,f){
   //!ctxs is a list of objects
   //!check overlaped existence of keys
@@ -49,6 +59,10 @@ function curryfree(f){
   "})")
 
   return F;
+}
+
+function alterCtx2(ctx, f){ // no eval
+  return function(){return f.apply(ctx,arguments); }
 }
 // ---------------------------------------------------------------------------------------------
 
@@ -235,7 +249,7 @@ function declToCtx(decl){
 
 //---------------------------------------------------------------------------------------------------
 
-
+var _ctx = "for(var k in this){ eval('var '+k+'='+this[k]+';'); }";
 
 // bulit-in functions
 var _builtins = {
@@ -647,6 +661,7 @@ function setModule(env){
 
 return { //exporting to quickjsfp
   setModule : setModule
+, _ctx : _ctx
 , set_builtin_cons : set_builtin_cons
 , set_builtin_nil : set_builtin_nil
 , set_builtin_pr2 : set_builtin_pr2
@@ -671,22 +686,22 @@ function open2window(obj){
   }
 }
 
-var ListMod = 
-  module( "List/0"
-  , "data List = Nil/0 | Cons/2"
-  , function(){
+// var ListMod = 
+//   module( "List/0"
+//   , "data List = Nil/0 | Cons/2"
+//   , function(){
 
-    set_builtin_cons(Cons);
-    set_builtin_nil(Nil);
+//     set_builtin_cons(Cons);
+//     set_builtin_nil(Nil);
     
-    return exporting(List)({
-        head : lam('x:xs', function(){ return x; })
-      , tail : lam('x:xs', function(){ return xs; })
-    });
-  });
+//     return exporting(List)({
+//         head : lam('x:xs', function(){ return x; })
+//       , tail : lam('x:xs', function(){ return xs; })
+//     });
+//   });
 
-open2window(quickjsfp);
-open2window(ListMod);
+// open2window(quickjsfp);
+// open2window(ListMod);
 
 // var TPr2Mod =
 //   module( "TPr2Mod/0"
@@ -712,17 +727,5 @@ open2window(ListMod);
 // quickjsfp.set_builtin_pr3(TPr3Mod.Pr3);
 
 
-
-// built-in modules
-
-
-
-
-// functions to implement:
-// cases
-// lam
-// ll
-// lp
-// comp
 
 
