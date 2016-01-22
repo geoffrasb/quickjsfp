@@ -62,7 +62,7 @@ function curryfree(f){
 }
 
 function alterCtx2(ctx, f){ // no eval
-  return function(){return f.apply(ctx,arguments); }
+  return eval("(function("+genVars(f.length)+"){return f.apply(ctx,arguments)})"); 
 }
 // ---------------------------------------------------------------------------------------------
 
@@ -675,12 +675,12 @@ function module(modname){
   var decls = args.slice(1,-1);
   var modulebody = args[arguments.length-1];
 
-  var contexts = decls.map(function(x){ return declToCtx(parseDecl(x));}); 
+  var context = mergeTables([this].concat(decls.map(function(x){ return declToCtx(parseDecl(x));}))); 
   //a context :: a table of symbol to be used in the module body
 
   if(modulebody.length==0){
     // {_exported:[f1,f2...], f1:..., f2:...}
-    var res = alterCtx(contexts, modulebody)();
+    var res = modulebody.call(context);
     var exp = [];
     for(var k in res){
       exp.push(k);
@@ -688,7 +688,7 @@ function module(modname){
     res['_exported'] = exp;
     return res;
   }else{
-    var runbody = alterCtx(contexts, modulebody);
+    var runbody = alterCtx2(context, modulebody);
     var addexp = eval("(function("+genVars(modulebody.length)+"){" +
       "var res = runbody.apply(this,arguments)"                    +
       "var exp = [];"                                              +
@@ -703,12 +703,9 @@ function module(modname){
 
 }
 
-function setModule(env){
-  return alterCtx([env], module);
-}
 
 return { //exporting to quickjsfp
-  setModule : setModule
+  module : module
 , _ctx : _ctx
 , set_builtin_cons : set_builtin_cons
 , set_builtin_nil : set_builtin_nil
@@ -728,7 +725,6 @@ return { //exporting to quickjsfp
 }
 })(); // end of quickjsfp closure
 
-var module = quickjsfp.setModule(quickjsfp);
 function open2window(obj){
   for(var i in obj){
     window[i] = obj[i];
