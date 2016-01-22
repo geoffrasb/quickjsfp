@@ -550,6 +550,25 @@ function bindsToCtx(binds){
   return res;
 }
 
+function splittingPatFuncString(src){
+}
+
+function fb(str){ //function body
+  // find last (;) the (;) is not in any curly braces {} or parenthesis()
+  var start = 0;
+  var pos = 0;
+  var temp = 0;
+  while(temp!=-1){
+    temp = findNextSplit(';',str,start);
+    start = temp + 1;
+    if(temp!=-1) pos = temp;
+  }
+  // do all the inserting job
+  var funcstr = "(function(){eval(\""+_ctx+"\");"; //eval(_ctx)
+  funcstr += str.slice(0,pos+1) + "return "+ str.slice(pos+1) +"})";
+  return eval(funcstr);
+}
+
 
 function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
   var datas = arguments;
@@ -671,6 +690,7 @@ return { //exporting to quickjsfp
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
 , curryfree : curryfree
+, fb : fb
 , cases : cases
 , lam : lam
 , ll : ll
