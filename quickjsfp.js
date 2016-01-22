@@ -216,7 +216,7 @@ function declToCtx(decl){
             }
           }
           if(decl.contents[k] == null){
-            console.log("Warning: using nonexist thing \'"+k+"\' of the module");
+            console.log("Warning: using nonexisting thing \'"+k+"\' of the module");
           }else{
             opening[nameAltered? newName : k] = decl.contents[k];
           }
@@ -551,6 +551,13 @@ function bindsToCtx(binds){
 }
 
 function splittingPatFuncString(src){
+  // if src has the form "pattern -> body" then return [pattern, body], else []
+  var pos = src.search("->");
+  if(pos!=-1){
+    return [src.slice(0,pos).trim(), src.slice(pos+2).trim()];
+  }else{
+    return [];
+  }
 }
 
 function fb(str){ //function body
@@ -571,22 +578,38 @@ function fb(str){ //function body
 
 
 function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
-  var datas = arguments;
+  var datas = [];
+  for(var i in arguments){
+    datas.push(arguments[i]);
+  }
 
   return function(){
-    var varBindings = [];
-    var patlst = [];
-    var funclst = [];
-    for(var i in arguments){
-      (i%2? funclst : patlst).push(arguments[i]);
-    }
-    // funclst.length == patlst.length
-    var matchFin = false;
+    var argi = 0;
     var temp = {};
-    for(var i in patlst){
-      temp = matchPatterns(parseSpacedPatterns(patlst[i]), datas);
-      if(temp!=null){
-        return alterCtx([bindsToCtx(temp)], funclst[i])();
+    var state = 0; //0=reading pattern, 1=finding callback function
+    var temp_bind = null;
+    while(argi < arguments.length){
+      if(state == 0){ // reading pattern
+        temp = splittingPatFuncString(arguments[argi]);
+        if(temp!=-1){ // it's a combined form (pat -> funcBody)
+          temp = matchPatterns(parseSpacedPatterns(temp[0]), datas);
+          if(temp!=null){ // match success
+            return bf(temp[1]).call(bindsToCtx(temp));
+          }else{ // match failed
+            argi += 1;
+          }
+        }else{ // it's just a pattern
+          temp = matchPatterns(parseSpacedPatterns(arguments[argi]), datas);
+          if(temp!=null){ // match success
+            temp_bind = temp;
+            argi += 1;
+            state = 1;
+          }else{ // match failed
+            argi += 2;
+          }
+        }
+      }else{ // finding callback function
+        return arguments[argi].call(bindsToCtx(temp_bind));
       }
     }
     console.log('error: no appropriate pattern to match');
