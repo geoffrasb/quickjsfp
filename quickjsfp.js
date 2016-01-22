@@ -568,7 +568,7 @@ function lam(/*args*/){ //(pat,func,pat,func...
   for(var i in arguments){
     args.push(arguments[i]);
   }
-  return eval("(function("+vars+"){ return cases("+vars+").apply(this,args); })")
+  return curryfree(eval("(function("+vars+"){ return cases("+vars+").apply(this,args); })"))
 }
 
 function ll(/*args*/){ // mimicing literal list
@@ -685,6 +685,8 @@ var ListMod =
     });
   });
 
+open2window(quickjsfp);
+open2window(ListMod);
 
 // var TPr2Mod =
 //   module( "TPr2Mod/0"
