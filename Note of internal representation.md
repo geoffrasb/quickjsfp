@@ -41,7 +41,7 @@ var declR = { decltype : "record"
 * function body(with altered context)
 
   + add `eval(_ctx)` at the begining of the function body
-  + use `module('mod/0',fb('exp1;exp2;exp3;'))`, `lam('pattern', fb('...'))`, case(x,y)(fb('...'))or `lam('pattern -> exp1;exp2')`
+  + use `module('mod/0',fb('exp1;exp2;exp3;'))`, `lam('pattern', fb('...'))`, case(x,y)('pattern', fb('...'))or `lam('pattern -> exp1;exp2')`
 
 
 
