@@ -45,7 +45,20 @@ function curryfree(f){
     "var thisF = arguments.callee;"                                 +
     "var restArity = thisF.length - arguments.length;"              +
     "if(restArity <=0){"                                            +
-      "return f.apply(this,arguments);"                             +
+    "  var res = f.apply(this,arguments);"                          +
+    "  if(typeof res==\"function\"){"                               +
+    "    if(restArity == 0){"                                       +
+    "      return curryfree(res);"                                  +
+    "    }else{"                                                    +
+    "      var restargs = [];"                                      +
+    "      for(var i = thisF.length; i < arguments.length; i++){"   +
+    "        restargs.push(arguments[i]);"                          +
+    "      }"                                                       +
+    "      return curryfree(res).apply(this,restargs);"             +
+    "    }"                                                         +
+    "  }else{"                                                      +
+    "    return res;"                                               +
+    "  }"                                                           +
     "}else{"                                                        +
       "var curArgs = [];"                                           +
       "for(var i in arguments){ curArgs.push(arguments[i]); }"      +
