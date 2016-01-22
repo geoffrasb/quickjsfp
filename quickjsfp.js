@@ -591,10 +591,10 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
     while(argi < arguments.length){
       if(state == 0){ // reading pattern
         temp = splittingPatFuncString(arguments[argi]);
-        if(temp!=-1){ // it's a combined form (pat -> funcBody)
+        if(temp.length!=0){ // it's a combined form (pat -> funcBody)
           temp = matchPatterns(parseSpacedPatterns(temp[0]), datas);
           if(temp!=null){ // match success
-            return bf(temp[1]).call(bindsToCtx(temp));
+            return bf(temp[1]).call(mergeTables([this, bindsToCtx(temp)]));
           }else{ // match failed
             argi += 1;
           }
@@ -609,7 +609,7 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
           }
         }
       }else{ // finding callback function
-        return arguments[argi].call(bindsToCtx(temp_bind));
+        return arguments[argi].call(mergeTables([this, bindsToCtx(temp_bind)]));
       }
     }
     console.log('error: no appropriate pattern to match');
@@ -618,7 +618,13 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
 }
 
 function lam(/*args*/){ //(pat,func,pat,func...
-  var len = parseSpacedPatterns(arguments[0]).length;
+  var temp = splittingPatFuncString(arguments[0]);
+  var len = -1;
+  if(temp.length!=0){ // it's combined pattern
+    len = parseSpacedPatterns(temp[0]).length;
+  }else{
+    len = parseSpacedPatterns(arguments[0]).length;
+  }
   var vars = genVars(len);
   var args = [];
   for(var i in arguments){
