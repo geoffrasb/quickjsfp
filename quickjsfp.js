@@ -12,30 +12,6 @@ function genVars(n){
   return res;
 }
 
-function mergeTables(tables){ // if exists repeated variables, take the value of the last one
-  var res = {};
-  for(var i in tables){
-    for(var k in tables[i]){
-      res[k] = tables[i][k];
-    }
-  }
-  return res;
-}
-
-function alterCtx(ctxs,f){
-  //!ctxs is a list of objects
-  //!check overlaped existence of keys
-
-  var fstr = "(function(){\n";
-  for(var i=0;i<ctxs.length;i++){
-    for(var k in ctxs[i]){
-      fstr += "var "+k+"=ctxs[\'"+i+"\'][\'"+k+"\'];\n";
-    }
-  }
-  fstr += "return ("+f.toString()+");})()"
-  return eval(fstr);
-}
-
 function curryfree(f){
   if(f.length == 0){
     return f;
@@ -74,6 +50,103 @@ function curryfree(f){
   return F;
 }
 
+function args2array(args){
+  var arr = [];
+  for(var i in args){
+    arr.push(args[i]);
+  }
+  return arr;
+}
+
+function zip(arrs){ // arrays
+  var args = args2array(arguments);
+  var minlen = Math.min.apply(this, args.map(function(x){return x.length;}));
+  var res = [];
+  for(var i=0; i<minlen; i++){
+    var temp = [];
+    args.map(function(x){temp.push(x[i]);});
+    res.push(temp);
+  }
+  return res;
+}
+
+function FPModule(table){ //table is an object
+  var exp = [];
+  var self = this;
+  Object.keys(table).map(function(k){ 
+    exp.push(k);
+    self[k] = table[k];
+  })
+  this['_exported'] = function(){return exp;}
+}
+
+function FPIndType(typename, cnstrgetter, fold){  // cnstrgetter :: () -> [cnstr], fold is the fold for the inductive type
+  this.type_name = typename;
+  this.constructors = cnstrgetter();
+  this.fold = fold;
+}
+
+function FPIndCnstr(cnstrname, indtype, arity){ //indtype :: FPIndType, arity :: Int
+  this.constructor_name = cnstrname;
+  this.arity = arity;
+  this.constructing_type = indtype;
+  Object.freeze(this);
+}
+
+function FPIndData(cnstr, args){ //cnstr :: FPIndCnstr, args :: [a]
+  this.indtype = cnstr.constructing_type;
+  this.fpconstructor = cnstr;
+  this.args = args;
+}
+FPIndCnstr.prototype['genJSfunc'] = function(){
+  var f = curryfree(eval("(function("+genVars(this.arity)+"){" + 
+    "return new FPIndData(this, args2array(arguments)); })"));
+  f.constructor = FPIndCnstr;
+  Object.freeze(f);
+  return f;
+};
+
+function FPRecord(recname, fieldnames){ // fieldnames :: [str]
+  this.record_name;
+  this.field_names = fieldnames;
+}
+FPRecord.prototype['genJSfunc'] = function(){
+  var f = curryfree(eval("(function("+genVars(this.field_names.length)+"){" +
+    "var t = {};" +
+    "
+    "return new FPModule(t);})"));
+  f.constructor = FPRecord;
+  return f;
+};
+
+
+
+
+
+function mergeModules(modules){ // if exists repeated variables, take the value of the last one
+  var res = {};
+  for(var i in modules){
+    modules[i]._exported()
+  }
+  return (new Module(res));
+}
+
+function alterCtx(ctxs,f){
+  //!ctxs is a list of objects
+  //!check overlaped existence of keys
+
+  var fstr = "(function(){\n";
+  for(var i=0;i<ctxs.length;i++){
+    for(var k in ctxs[i]){
+      fstr += "var "+k+"=ctxs[\'"+i+"\'][\'"+k+"\'];\n";
+    }
+  }
+  fstr += "return ("+f.toString()+");})()"
+  return eval(fstr);
+}
+
+
+
 function alterCtx2(ctx, f){ // no eval
   return eval("(function("+genVars(f.length)+"){return f.apply(ctx,arguments)})"); 
 }
@@ -81,10 +154,13 @@ function alterCtx2(ctx, f){ // no eval
 
 function exporting(/*args*/){
   // args are type names, module names, record names
-  var expargs = arguments;
+  var expargs = [];
+  for(var i in arguments){
+    expargs.push(arguments[i]);
+  }
   return function(expobj){
     for(var i in expargs){
-      if(expargs[i]['_exported']!=null){ //expargs[i] is a module
+      if(typeof(expargs[i]['_exported']) != 'undefined'){ //expargs[i] is a module
         // adding exported fields of the module to the incoming expobj
         expargs[i]._exported.forEach(function(exportedThing){
           expobj[exportedThing] = expargs[i][exportedThing];
@@ -262,7 +338,13 @@ function declToCtx(decl){
 
 //---------------------------------------------------------------------------------------------------
 
-var _ctx = "for(var k in this){ eval('var '+k+'='+this[k]+';'); }";
+function _opentable(table, tableName){
+  var res = "";
+  for(var k in table){
+    res += "var "+k+"="+tableName+"[\'"+k+"\'];"
+  }
+  return res;
+}
 
 // bulit-in functions
 var _builtins = {
@@ -572,20 +654,34 @@ function splittingPatFuncString(src){
     return [];
   }
 }
-
+function _expandThis(t){
+  res = "";
+  for(var k in t){
+    if(typeof(window[k]) == 'undefined'){
+      res += "var "+k+"= this[\\'"+k+"\\'];";
+    }
+  }
+  return res;
+}
 function fb(str){ //function body
   // find last (;) the (;) is not in any curly braces {} or parenthesis()
   var start = 0;
   var pos = 0;
-  var temp = 0;
+  var temp = findNextSplit(';',str,start);
+  var has_semicolon = true;
+  if(temp==-1) has_semicolon = false;
   while(temp!=-1){
     temp = findNextSplit(';',str,start);
     start = temp + 1;
     if(temp!=-1) pos = temp;
   }
   // do all the inserting job
-  var funcstr = "(function(){eval(\""+_ctx+"\");"; //eval(_ctx)
-  funcstr += str.slice(0,pos+1) + "return "+ str.slice(pos+1) +"})";
+  var funcstr = "(function(){eval(\'"+_expandThis(this)+"\');"; 
+  if(has_semicolon){
+    funcstr += str.slice(0,pos+1) + "return "+ str.slice(pos+1) +"})";
+  }else{
+    funcstr += "return "+str+"})";
+  }
   return eval(funcstr);
 }
 
@@ -598,16 +694,17 @@ function cases(/*args*/){ //(a,b,c)(pat,func, pat,func...
 
   return function(){
     var argi = 0;
-    var temp = {};
+    var patfunc = [];
+    var temp2 = {};
     var state = 0; //0=reading pattern, 1=finding callback function
     var temp_bind = null;
     while(argi < arguments.length){
       if(state == 0){ // reading pattern
-        temp = splittingPatFuncString(arguments[argi]);
-        if(temp.length!=0){ // it's a combined form (pat -> funcBody)
-          temp = matchPatterns(parseSpacedPatterns(temp[0]), datas);
+        patfunc = splittingPatFuncString(arguments[argi]);
+        if(patfunc.length!=0){ // it's a combined form (pat -> funcBody)
+          temp = matchPatterns(parseSpacedPatterns(patfunc[0]), datas);
           if(temp!=null){ // match success
-            return bf(temp[1]).call(mergeTables([this, bindsToCtx(temp)]));
+            return fb(patfunc[1]).call(mergeTables([this, bindsToCtx(temp)]));
           }else{ // match failed
             argi += 1;
           }
@@ -719,7 +816,7 @@ function module(modname){
 
 return { //exporting to quickjsfp
   module : module
-, _ctx : _ctx
+, _opentable : _opentable
 , set_builtin_cons : set_builtin_cons
 , set_builtin_nil : set_builtin_nil
 , set_builtin_pr2 : set_builtin_pr2
@@ -729,6 +826,7 @@ return { //exporting to quickjsfp
 , set_builtin_pr6 : set_builtin_pr6
 , set_builtin_pr7 : set_builtin_pr7
 , curryfree : curryfree
+, exporting : exporting
 , fb : fb
 , cases : cases
 , lam : lam
@@ -744,19 +842,32 @@ function open2window(obj){
   }
 }
 
-// var ListMod = 
-//   module( "List/0"
-//   , "data List = Nil/0 | Cons/2"
-//   , function(){
+function _opent(table, tableName){
+  var res = "";
+  for(var k in table){
+    res += "var "+k+"="+tableName+"[\'"+k+"\'];"
+  }
+  return res;
+}
+var module = quickjsfp.module;
 
-//     set_builtin_cons(Cons);
-//     set_builtin_nil(Nil);
+
+var ListMod = 
+  module( "List/0"
+  , "data List = Nil/0 | Cons/2"
+  , function(){
+    eval(_opent(quickjsfp, "quickjsfp"));
+    eval(_opentable(this,'this'));
     
-//     return exporting(List)({
-//         head : lam('x:xs', function(){ return x; })
-//       , tail : lam('x:xs', function(){ return xs; })
-//     });
-//   });
+
+    set_builtin_cons(Cons);
+    set_builtin_nil(Nil);
+    
+    return exporting(List)({
+        head : lam('x:_ -> x')
+      , tail : lam('_:xs -> xs')
+    });
+  });
 
 // open2window(quickjsfp);
 // open2window(ListMod);
