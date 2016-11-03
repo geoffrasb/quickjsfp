@@ -2,27 +2,37 @@
 
 ## language proposal
 
-One plus three notions to realise in javascript:
+Notions to realise in javascript:
 * module system as in agda
-* type introduction with ADT
-* type elimination with numbers of ways of pattern matching
+* inductive and coinductive datatypes
+* induction and coinduction (pattern matching)
 * function compositions with native javascript functions
 
 ## Declarations
 
+### List of functionalities
+
+* module
+* record
+* data
+* codata
+* induction
+* coinduction
+
 ### all together
 ```
-var mod1 = module('modName x y'
+eval(module('modName x y'
   , function(x,y){
-    data('List/1 = Nil/0 | Cons/2')
-    codata('Stream/1 = {head, tail}')
-    record('R/0 = {f1, f2, f3}')
+    eval( data('List/1 = Nil/0 | Cons/2')
+        + codata('Stream/1 = {head, tail}')
+        + record('R/0 = {f1, f2, f3}')
+        )
     subMod = module(...)
 
     _builtinNil(Nil);
     _builtinCons(Cons);
 
-    open(/*module*/, [/*usings*/], [/*renamings*/])
+    eval(open(/*module*/, [/*usings*/]))
 
     var g1 = function(args){ ... }
     var f1 = //f1 : Int -> [Int] -> Int
@@ -44,9 +54,10 @@ var mod1 = module('modName x y'
 
     //fromStream : Stream (Maybe a) -> [a]
     function fromStream(s){
-      return case( s
+      return case( head(s)
       , '(Just a)' , function(a){return Cons(a, fromStream(tail(s)));}
       , 'Nothing'  , Nil
+      )
     }
 
 
@@ -54,8 +65,9 @@ var mod1 = module('modName x y'
     { g : g1
     , f : f1
     })
-  })
+  }))
 ```
+    var IH = function(){return gg.f.apply(this,arguments)}
     indNat(function(){return 0;}
        ,function(n){return IH(n);})
     var indNat = function(f0,fn){
@@ -72,8 +84,6 @@ var mod1 = module('modName x y'
 
     }
 
-
-### Function
 
 ## example
 

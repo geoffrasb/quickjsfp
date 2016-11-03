@@ -5,17 +5,18 @@
 ### declaration
 
 ```
-module('moduleName [params]|moduleName/arity'
+eval(module('moduleName [params]|moduleName/arity'
 , function(args){
   ...
   return exporting(...)({...})
-})
+}))
 ```
 
 In the first argument, `params` is a list of items seperated by spaces;
 Regardless of the contents, Q.J.F. only counts the arity of the module.
 
-The function returns an object with accessible items of the declared module. 
+`module` returns a string of declaration, by which creates a symbol points to 
+an object with accessible items of the declared module, after evaluated by `eval`.
 See more in section *exporting*.
 
 examples:
@@ -23,10 +24,14 @@ examples:
 `module('Functor a', function(a){ ... })`
 ==
 `module('Functor/1', function(a){ ... })`
+==
+`'var Functor = .../*internal representation of the module*/;'`
+
 
 `module('dummy', function(){ ... })`
 ==
 `module('dummy/0, function(){ ... })`
+
 
 `module('Monad (a : Applicative b)', function(a){ ... })`
 ==
@@ -59,6 +64,10 @@ example:
 
 
 ## Record
+
+### Declaration
+
+`record()`
 
 ## Data, Codata
 
