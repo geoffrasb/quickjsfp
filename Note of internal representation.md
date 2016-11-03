@@ -19,6 +19,8 @@ Regardless of the contents, Q.J.F. only counts the arity of the module.
 an object with accessible items of the declared module, after evaluated by `eval`.
 See more in section *exporting*.
 
+There will be another function `module_` to be the version that will return the module object.
+
 examples:
 
 `module('Functor a', function(a){ ... })`
@@ -46,16 +48,21 @@ examples:
 
 ### open
 
-eval(open(/*module*/, [/*usings*/]))
+eval(open(/*module*/, [/*options*/]))
 
-`usings` is a list of strings of keys of the module. See the example below.
+`options` informs whether some items in the module will be renamed or hidden, 
+or opening some items specifically. If it's not declared, 
+then all the elements inside will be opened; if this part contains
+only renaming information, then it does the same. 
+When there are conflicting options, the later one will be taken as the case.
 
 The `open` function return a string like `var k = m.k;` to expose the symbols 
 in the module to the current scope.
 
+
 example:
 
-`eval(open(ListUtils, 'fold, map, Cons as c, Nil as n'))`
+`eval(open(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))`
 ==
 `eval(open(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))`
 ==
