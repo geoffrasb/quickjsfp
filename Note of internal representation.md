@@ -1,5 +1,73 @@
 # Note of internal representation
 
+## Module
+
+### declaration
+
+```
+module('moduleName [params]|moduleName/arity'
+, function(args){
+  ...
+  return exporting(...)({...})
+})
+```
+
+In the first argument, `params` is a list of items seperated by spaces;
+Regardless of the contents, Q.J.F. only counts the arity of the module.
+
+The function returns an object with accessible items of the declared module. 
+See more in section *exporting*.
+
+examples:
+
+`module('Functor a', function(a){ ... })`
+==
+`module('Functor/1', function(a){ ... })`
+
+`module('dummy', function(){ ... })`
+==
+`module('dummy/0, function(){ ... })`
+
+`module('Monad (a : Applicative b)', function(a){ ... })`
+==
+`module('Monad/1', function(a){ ... })`
+
+
+### exporting
+
+`exporting(x,y)({ z : z1 })`
+==
+`{x : x, y : y, z : z1}`
+
+### open
+
+eval(open(/*module*/, [/*usings*/]))
+
+`usings` is a list of strings of keys of the module. See the example below.
+
+The `open` function return a string like `var k = m.k;` to expose the symbols 
+in the module to the current scope.
+
+example:
+
+`eval(open(ListUtils, 'fold, map, Cons as c, Nil as n'))`
+==
+`eval(open(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))`
+==
+`eval('var fold = ListUtils.fold; ...; var c = ListUtils.Cons;')`
+
+
+
+## Record
+
+## Data, Codata
+
+## Function, pattern matching
+
+- no currying
+
+
+
 * declaration string -> process of turning declaration to the context of module declaration
 
 ```
