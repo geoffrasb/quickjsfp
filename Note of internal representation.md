@@ -222,20 +222,24 @@ examples:
 
 4. record
 
-eval(record('R2/0 = {f1, f2}'))
-eval(record('R3/0 = {f1, f2, f3}'))
-var f1 = 
-  func( "R -> A"
-  , 'r@{f1 = x, f2 = y}', function(r,x,y){...}
-  )
+    eval(record('R2/0 = {f1, f2}'))
+    eval(record('R3/0 = {f1, f2, f3}'))
+    var f1 = 
+      func( "R -> A"
+      , 'r@{f1 = x, f2 = y}', function(r,x,y){...}
+      )
 
-var f2 =
-  func( "-R2 -> A"
-  , 'rec@{rest|f1 = x, f2 = y}' , function(r,rest,x,y){...}
-  )
-//suppose instance of R3 is given, then rest = {f3 : ...}
+    var f2 =
+      func( "-R2 -> A"
+      , 'rec@{rest|f1 = x, f2 = y}' , function(r,rest,x,y){...}
+      )
+    //suppose instance of R3 is given, then rest = {f3 : ...}
 
-
+    var splitting = function(x){
+      return case(x
+             , '{r | b = b, c = c1}' , function(r,b,c1){ return [r,{b:b,c:c1}]}
+             )
+      }
 
 
 
@@ -252,8 +256,47 @@ var f2 =
 
 ## Parsing
 
-* Type
-* patterns
+`list(',','pat')` means accepting things like `'pat , pat , pat'`.
+
+ModuleDecl := Name ('/' Int | list(' ', Type))
+DataDecl   := NameType '=' list('|', NameType )
+CodataDecl := RecordDecl
+RecordDecl := NameType '=' RecordTypeDecl
+
+RecordTypeDecl := '{' list(',', name +(':' Type)) '}'
+
+
+NameType := Name ((':' Type) | '/' Int)
+
+
+
+Patterns := list(' ', APattern)
+
+IPattern := '_'
+         | Name
+         | Constructor Patterns
+         | '(' List(',', Pattern) ')'
+         | '[' List(',', Pattern) ']'
+         | '(' Pattern ')'
+         | Pattern ':' Pattern
+
+CPattern :=
+          | Observer '*'
+          | Observer '(' '*' Patterns ')'
+Observer := '_'
+          | Name
+
+
+Type := '{' Name ':' Type '}'
+      | Type '->' Type
+      | -Type
+      | '(' List(',', Type) ')'
+      | '(' Type ')'
+      | RecordTypeDecl
+      | '[' Type ']'
+
+
+
 
 
 
