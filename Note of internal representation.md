@@ -160,6 +160,48 @@ examples:
 ## Function, pattern matching
 
 - no currying
+- 3 functions: func, case, REC
+
+Where
+`func([Arity, Type], patterns1, callback1, patterns2, callback2 ...)`
+returns a function,
+And
+`case( Object, pattern1, callback1, pattern2, callback2 ...)`
+returns the result.
+
+`REC` is used in callbacks declared in `func` for recursive call.
+
+examples:
+
+```
+var f1 = 
+  func( "Int -> [Int] -> Int"
+  , 'n []'     , function(n){
+                  return n;}
+  , 'n (x:xs)' , function(n,x,xs){
+                  return REC(n+x,xs)}
+  )
+```
+===
+```
+var f1 = 
+  func( 2
+  , 'n []'     , function(n){
+                  return n;}
+  , 'n (x:xs)' , function(n,x,xs){
+                  return REC(n+x,xs)}
+  )
+```
+```
+function fromStream(s){
+  return case( head(s)
+  , '(Just a)' , function(a){return Cons(a, fromStream(tail(s)));}
+  , 'Nothing'  , Nil
+  )
+}
+```
+
+
 
 
 
