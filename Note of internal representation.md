@@ -29,6 +29,7 @@ There will be another function `module_` to be the version that will return the 
 
 examples:
 
+1.
     module('Functor a', function(a){ ... })
     ≡
     module('Functor/1', function(a){ ... })
@@ -36,6 +37,7 @@ examples:
     'var Functor = .../*internal representation of the module*/;'
 
 
+2.
     module('dummy', function(){ ... })
     ≡
     module('dummy/0, function(){ ... })
@@ -100,6 +102,7 @@ There's also a version `record_`.
 
 examples:
 
+1.
     record('R1 : Set = f1 : T1, f2 : T2')
     ≡
     record('R1/0 = f1 : T1, f2 : T2')
@@ -108,6 +111,7 @@ examples:
     ≡
     record('R1/0 = f1, f2')
 
+2.
     record('R2 (a : Set) : Set = f3')
     ≡
     record('R2/1 = f3')
@@ -174,7 +178,7 @@ returns the result.
 
 examples:
 
-
+1.
     var f1 = 
       func( "Int -> [Int] -> Int"
       , 'n []'     , function(n){
@@ -191,7 +195,7 @@ examples:
                       return REC(n+x,xs)}
       )
 
-
+2.
     function fromStream(s){
       return case( head(s)
       , '(Just a)' , function(a){return Cons(a, fromStream(tail(s)));}
