@@ -30,26 +30,26 @@ There will be another function `module_` to be the version that will return the 
 examples:
 
     module('Functor a', function(a){ ... })
-≡
+    ≡
     module('Functor/1', function(a){ ... })
-≡
+    ≡
     'var Functor = .../*internal representation of the module*/;'
 
 
     module('dummy', function(){ ... })
-≡
+    ≡
     module('dummy/0, function(){ ... })
 
 
     module('Monad (a : Applicative b)', function(a){ ... })
-≡
+    ≡
     module('Monad/1', function(a){ ... })
 
 
 ### exporting
 
     exporting(x,y)({ z : z1 })
-≡
+    ≡
     {x : x, y : y, z : z1}
 
 ### open
@@ -69,9 +69,9 @@ in the module to the current scope.
 example:
 
     eval(open(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))
-≡
+    ≡
     eval(open(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))
-≡
+    ≡
     eval('var fold = ListUtils.fold; ...; var c = ListUtils.Cons;')
 
 
@@ -101,15 +101,15 @@ There's also a version `record_`.
 examples:
 
     record('R1 : Set = f1 : T1, f2 : T2')
-≡
+    ≡
     record('R1/0 = f1 : T1, f2 : T2')
-≡
+    ≡
     record('R1/0 = f1, f2 : T2')
-≡
+    ≡
     record('R1/0 = f1, f2')
 
     record('R2 (a : Set) : Set = f3')
-≡
+    ≡
     record('R2/1 = f3')
 
 
@@ -144,7 +144,7 @@ examples:
     data('List : Set -> Set = \
             Cons : {a : Set} -> a -> List a -> List a \
           | Nil : {a : Set} -> List a')
-≡
+    ≡
     data('List/1 = Cons/2 | Nil/0')
 
 
@@ -174,33 +174,31 @@ returns the result.
 
 examples:
 
-```
-var f1 = 
-  func( "Int -> [Int] -> Int"
-  , 'n []'     , function(n){
-                  return n;}
-  , 'n (x:xs)' , function(n,x,xs){
-                  return REC(n+x,xs)}
-  )
-```
-≡
-```
-var f1 = 
-  func( 2
-  , 'n []'     , function(n){
-                  return n;}
-  , 'n (x:xs)' , function(n,x,xs){
-                  return REC(n+x,xs)}
-  )
-```
-```
-function fromStream(s){
-  return case( head(s)
-  , '(Just a)' , function(a){return Cons(a, fromStream(tail(s)));}
-  , 'Nothing'  , Nil
-  )
-}
-```
+
+    var f1 = 
+      func( "Int -> [Int] -> Int"
+      , 'n []'     , function(n){
+                      return n;}
+      , 'n (x:xs)' , function(n,x,xs){
+                      return REC(n+x,xs)}
+      )
+    ≡
+    var f1 = 
+      func( 2
+      , 'n []'     , function(n){
+                      return n;}
+      , 'n (x:xs)' , function(n,x,xs){
+                      return REC(n+x,xs)}
+      )
+
+
+    function fromStream(s){
+      return case( head(s)
+      , '(Just a)' , function(a){return Cons(a, fromStream(tail(s)));}
+      , 'Nothing'  , Nil
+      )
+    }
+
 
 
 
