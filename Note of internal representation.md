@@ -94,20 +94,20 @@ example:
 
 ### Declaration
 
-`eval(record('RecordName/Arity | RecordName [params] = {f1 : Type, f2 : Type, f3 : Type}'))`
+`eval(record('RecordName/Arity | RecordName [params] = f1 : Type, f2 : Type ... '))`
 
 There's also a version `record_`.
 
 examples:
-`record('R1 = {f1 : T1, f2 : T2}')`
+`record('R1 : Set = f1 : T1, f2 : T2')`
 ==
-`record('R1/0 = {f1 : T1, f2 : T2}')`
+`record('R1/0 = f1 : T1, f2 : T2')`
 ==
-`record('R1 = {f1, f2 : T2}')`
+`record('R1/0 = f1, f2 : T2')`
 ==
-`record('R1 = f1 f2')`
+`record('R1/0 = f1, f2')`
 
-`record('R2 (a : Set) = f3')`
+`record('R2 (a : Set) : Set = f3')`
 ==
 `record('R2/1 = f3')`
 
@@ -130,6 +130,23 @@ pattern matching?
 ## Data, Codata
 
 ### Declaration
+
+`eval(data('DataName/Arity | DataName [params] = Cnstrs')` (see example)
+
+`eval(codata( [same as record declaration] ))`
+
+Same as module and record, there are `data_` and `codata_`.
+
+
+examples:
+
+`data('List : Set -> Set = \
+         Cons : {a : Set} -> a -> List a -> List a \
+       | Nil : {a : Set} -> List a')`
+==
+`data('List/1 = Cons/2 | Nil/0')`
+
+
 
 
 
