@@ -96,32 +96,41 @@ example:
 
 ### Declaration
 
-`eval(record('RecordName/Arity | RecordName [params] = f1 : Type, f2 : Type ... '))`
+`eval(record('RecordName/Arity | RecordName [params] = {f1 : Type1, f2 : Type2 ...} '))`
 
 There's also a version `record_`.
+
+### Construction
+
+The delcaration defines a function `RecordName : Type1 -> Type2 ... -> RecordName`.
+Or use javascript object instead: `{f1 : ..., f2 : ...} : RecordName`
 
 examples:
 
 1.
-    record('R1 : Set = f1 : T1, f2 : T2')
+    record('R1 : Set = {f1 : T1, f2 : T2}')
     ≡
-    record('R1/0 = f1 : T1, f2 : T2')
+    record('R1/0 = {f1 : T1, f2 : T2}')
     ≡
-    record('R1/0 = f1, f2 : T2')
+    record('R1/0 = {f1, f2 : T2}')
     ≡
-    record('R1/0 = f1, f2')
+    record('R1/0 = {f1, f2}')
 
 2.
-    record('R2 (a : Set) : Set = f3')
+    record('R2 (a : Set) : Set = {f3}')
     ≡
-    record('R2/1 = f3')
+    record('R2/1 = {f3}')
 
 
 ### Covariance & contravariance (Dynamic record)
 
-pattern matching?
 
+    ABC < AB < A
+    123 < 12 < 1
 
+    ABC < AB, 123 < 12
+    ------------------
+    AB -> 123 < ABC -> 12
 
 
 
@@ -203,8 +212,48 @@ examples:
       )
     }
 
+3. copattern
+    var toStream = 
+      func( "[a] -> Stream (Maybe a)"
+      , '_ (* [])'        , Nothing
+      , 'head (* (x:xs))' , function(x){return Just(x);}
+      , 'tail (* (x:xs))' , _.compose(REC,id)
+      )
+
+4. record
+
+eval(record('R2/0 = {f1, f2}'))
+eval(record('R3/0 = {f1, f2, f3}'))
+var f1 = 
+  func( "R -> A"
+  , 'r@{f1 = x, f2 = y}', function(r,x,y){...}
+  )
+
+var f2 =
+  func( "-R2 -> A"
+  , 'rec@{rest|f1 = x, f2 = y}' , function(r,rest,x,y){...}
+  )
+//suppose instance of R3 is given, then rest = {f3 : ...}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Parsing
+
+* Type
+* patterns
 
 
 
