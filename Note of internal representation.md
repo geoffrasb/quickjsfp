@@ -1,5 +1,11 @@
 # Note of internal representation
 
+
+
+
+
+
+
 ## Module
 
 ### declaration
@@ -70,13 +76,69 @@ example:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Record
 
 ### Declaration
 
-`record()`
+`eval(record('RecordName/Arity | RecordName [params] = {f1 : Type, f2 : Type, f3 : Type}'))`
+
+There's also a version `record_`.
+
+examples:
+`record('R1 = {f1 : T1, f2 : T2}')`
+==
+`record('R1/0 = {f1 : T1, f2 : T2}')`
+==
+`record('R1 = {f1, f2 : T2}')`
+==
+`record('R1 = f1 f2')`
+
+`record('R2 (a : Set) = f3')`
+==
+`record('R2/1 = f3')`
+
+
+### Covariance & contravariance (Dynamic record)
+
+pattern matching?
+
+
+
+
+
+
+
+
+
+
+
 
 ## Data, Codata
+
+### Declaration
+
+
+
+
+
+
+
+
+
 
 ## Function, pattern matching
 
