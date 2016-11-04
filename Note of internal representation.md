@@ -32,29 +32,29 @@ examples:
     module('Functor a', function(a){ ... })
 ≡
     module('Functor/1', function(a){ ... })
-==
-`'var Functor = .../*internal representation of the module*/;'`
+≡
+    'var Functor = .../*internal representation of the module*/;'
 
 
-`module('dummy', function(){ ... })`
-==
-`module('dummy/0, function(){ ... })`
+    module('dummy', function(){ ... })
+≡
+    module('dummy/0, function(){ ... })
 
 
-`module('Monad (a : Applicative b)', function(a){ ... })`
-==
-`module('Monad/1', function(a){ ... })`
+    module('Monad (a : Applicative b)', function(a){ ... })
+≡
+    module('Monad/1', function(a){ ... })
 
 
 ### exporting
 
-`exporting(x,y)({ z : z1 })`
-==
-`{x : x, y : y, z : z1}`
+    exporting(x,y)({ z : z1 })
+≡
+    {x : x, y : y, z : z1}
 
 ### open
 
-eval(open(/*module*/, [/*options*/]))
+`eval(open(/*module*/, [/*options*/]))`
 
 `options` informs whether some items in the module will be renamed or hidden, 
 or opening some items specifically. If it's not declared, 
@@ -68,11 +68,11 @@ in the module to the current scope.
 
 example:
 
-`eval(open(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))`
-==
-`eval(open(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))`
-==
-`eval('var fold = ListUtils.fold; ...; var c = ListUtils.Cons;')`
+    eval(open(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))
+≡
+    eval(open(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))
+≡
+    eval('var fold = ListUtils.fold; ...; var c = ListUtils.Cons;')
 
 
 
@@ -99,17 +99,18 @@ example:
 There's also a version `record_`.
 
 examples:
-`record('R1 : Set = f1 : T1, f2 : T2')`
-==
-`record('R1/0 = f1 : T1, f2 : T2')`
-==
-`record('R1/0 = f1, f2 : T2')`
-==
-`record('R1/0 = f1, f2')`
 
-`record('R2 (a : Set) : Set = f3')`
-==
-`record('R2/1 = f3')`
+    record('R1 : Set = f1 : T1, f2 : T2')
+≡
+    record('R1/0 = f1 : T1, f2 : T2')
+≡
+    record('R1/0 = f1, f2 : T2')
+≡
+    record('R1/0 = f1, f2')
+
+    record('R2 (a : Set) : Set = f3')
+≡
+    record('R2/1 = f3')
 
 
 ### Covariance & contravariance (Dynamic record)
@@ -140,11 +141,11 @@ Same as module and record, there are `data_` and `codata_`.
 
 examples:
 
-`data('List : Set -> Set = \
-         Cons : {a : Set} -> a -> List a -> List a \
-       | Nil : {a : Set} -> List a')`
-==
-`data('List/1 = Cons/2 | Nil/0')`
+    data('List : Set -> Set = \
+            Cons : {a : Set} -> a -> List a -> List a \
+          | Nil : {a : Set} -> List a')
+≡
+    data('List/1 = Cons/2 | Nil/0')
 
 
 
@@ -182,7 +183,7 @@ var f1 =
                   return REC(n+x,xs)}
   )
 ```
-===
+≡
 ```
 var f1 = 
   func( 2
