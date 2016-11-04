@@ -29,10 +29,10 @@ There will be another function `module_` to be the version that will return the 
 
 examples:
 
-`module('Functor a', function(a){ ... })`
-\equiv
-`module('Functor/1', function(a){ ... })`
-\==
+    module('Functor a', function(a){ ... })
+≡
+    module('Functor/1', function(a){ ... })
+==
 `'var Functor = .../*internal representation of the module*/;'`
 
 
