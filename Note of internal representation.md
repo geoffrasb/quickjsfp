@@ -92,6 +92,7 @@ example:
 
 
 
+
 ## Record
 
 ### Declaration
@@ -131,6 +132,8 @@ examples:
     ABC < AB, 123 < 12
     ------------------
     AB -> 123 < ABC -> 12
+
+
 
 
 
@@ -256,93 +259,59 @@ examples:
 
 ## Parsing
 
+* Types' names should be headed with upper case;
+* Constructors' are not necessarily.
+* Names of fields of a record should be headed with a lower case.
+* No constraint on variable names.
+
 `list(',','pat')` means accepting things like `'pat , pat , pat'`.
 
+Name := lName | uName (lower case or upper case)
+Constructor := Name
+
 ModuleDecl := Name ('/' Int | list(' ', Type))
-DataDecl   := NameType '=' list('|', NameType )
+DataDecl   := uNameType '=' list('|', NameType )
 CodataDecl := RecordDecl
-RecordDecl := NameType '=' RecordTypeDecl
+RecordDecl := uNameType '=' RecordTypeDecl
 
-RecordTypeDecl := '{' list(',', name +(':' Type)) '}'
-
-
-NameType := Name ((':' Type) | '/' Int)
+RecordTypeDecl := '{' list(',', lName +(':' Type)) '}'
 
 
+NameType  :=  Name ((':' Type) | '/' Int)
+uNameType := uName ((':' Type) | '/' Int)
+
+
+WholePattern := Patterns | CPattern
 
 Patterns := list(' ', APattern)
 
 IPattern := '_'
-         | Name
+         | Name                           (including variables and constructors)
          | Constructor Patterns
          | '(' List(',', Pattern) ')'
          | '[' List(',', Pattern) ']'
          | '(' Pattern ')'
-         | Pattern ':' Pattern
+         | ?(lName '@') RecordPattern
+         | IPattern ':' IPattern
+
+RecordPattern := '{' ?((Name | '_') '|') list(',', lName '=' IPattern) '}'
+
 
 CPattern :=
           | Observer '*'
           | Observer '(' '*' Patterns ')'
 Observer := '_'
-          | Name
+          | lName
 
 
-Type := '{' Name ':' Type '}'
-      | Type '->' Type
-      | -Type
-      | '(' List(',', Type) ')'
-      | '(' Type ')'
-      | RecordTypeDecl
-      | '[' Type ']'
-
-
-
-
-
-
-* declaration string -> process of turning declaration to the context of module declaration
-
-```
-example decl intermediate data
-var declList = { decltype : "data"
-  , typename : "List"
-  , constructors : [["nil",0], ["cons",2]]
-}
-var declM = { decltype : "open"
-, quantifier : "M" //"" for no quantifier
-, contents : {f1:5, f2:10, f3:15}
-, use : ["f2","f3"]
-, hides : ["f1"]
-, renaming : [['f3','g3']]
-}
-var declR = { decltype : "record"
-, recordname : "R"
-, fields : ["f1","f2"]
-}
-```
-
-
-* context representation of declarations
-
-  + data
-    - typename(e.g., `List`): `List` support the `exporting` function to work. (`List = {intermediateDatatype:"data", constructors:[["Cons",Cons], ["Nil",Nil]]}`).
-
-    - constructor(e.g., `Cons`,`Nil`): constructors are functions, making objects:`{fromConstructor:Cons, args:[x,xs]}`, constructors have a field `constructorName` record the constructor's name in string.
-
-    - constructor with arity=0, itself is {fromConstructor:null, args:..., constructorName:...}
-
-  + open
-    - just open things in the module. btw, a module is like `{_exported:['f1','f2'], f1:..., f2:... }`
-  + record
-    - a record is a constructor constains fields: `{intermediateDatatype:"record", getters:["f1","f2"]}`, this is also for the `exporting` function.
-
-
-
-* function body(with altered context)
-
-  + add `eval(_ctx)` at the begining of the function body
-  + use `module('mod/0',fb('exp1;exp2;exp3;'))`, `lam('pattern', fb('...'))`, case(x,y)('pattern', fb('...'))or `lam('pattern -> exp1;exp2')`
-
+Type := '{' Name ':' Type '}'    k = 1
+      | Type '->' Type           k = 2
+      | -Type                    k = 3
+      | '(' List(',', Type) ')'  k = 4
+      | '(' Type ')'             k = 5
+      | RecordTypeDecl           k = 6
+      | '[' Type ']'             k = 7
+      | Name                     k = 8
 
 
 
