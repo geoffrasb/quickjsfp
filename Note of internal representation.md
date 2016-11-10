@@ -11,7 +11,7 @@
 ### declaration
 
 ```
-eval(module('moduleName [params]|moduleName/arity'
+eval(evModule('moduleName [params]|moduleName/arity'
 , function(args){
   ...
   return exporting(...)({...})
@@ -25,27 +25,27 @@ Regardless of the contents, Q.J.F. only counts the arity of the module.
 an object with accessible items of the declared module, after evaluated by `eval`.
 See more in section *exporting*.
 
-There will be another function `module_` to be the version that will return the module object.
+There will be another function `module` to be the version that will return the module object.
 
 examples:
 
 1.
-    module('Functor a', function(a){ ... })
+    evModule('Functor a', function(a){ ... })
     ≡
-    module('Functor/1', function(a){ ... })
+    evModule('Functor/1', function(a){ ... })
     ≡
     'var Functor = .../*internal representation of the module*/;'
 
 
 2.
-    module('dummy', function(){ ... })
+    evModule('dummy', function(){ ... })
     ≡
-    module('dummy/0, function(){ ... })
+    evModule('dummy/0, function(){ ... })
 
 
-    module('Monad (a : Applicative b)', function(a){ ... })
+    evModule('Monad (a : Applicative b)', function(a){ ... })
     ≡
-    module('Monad/1', function(a){ ... })
+    evModule('Monad/1', function(a){ ... })
 
 
 ### exporting
@@ -56,7 +56,7 @@ examples:
 
 ### open
 
-`eval(open(/*module*/, [/*options*/]))`
+`eval(evOpen(/*module*/, [/*options*/]))`
 
 `options` informs whether some items in the module will be renamed or hidden, 
 or opening some items specifically. If it's not declared, 
@@ -64,15 +64,15 @@ then all the elements inside will be opened; if this part contains
 only renaming information, then it does the same. 
 When there are conflicting options, the later one will be taken as the case.
 
-The `open` function return a string like `var k = m.k;` to expose the symbols 
+The `evOpen` function return a string like `var k = m.k;` to expose the symbols 
 in the module to the current scope.
 
 
 example:
 
-    eval(open(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))
+    eval(evOpen(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))
     ≡
-    eval(open(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))
+    eval(evOpen(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))
     ≡
     eval('var fold = ListUtils.fold; ...; var c = ListUtils.Cons;')
 
@@ -97,9 +97,9 @@ example:
 
 ### Declaration
 
-`eval(record('RecordName/Arity | RecordName [params] = {f1 : Type1, f2 : Type2 ...} '))`
+`eval(evRecord('RecordName/Arity | RecordName [params] = {f1 : Type1, f2 : Type2 ...} '))`
 
-There's also a version `record_`.
+There's also a version `record`.
 
 ### Construction
 
@@ -109,18 +109,18 @@ Or use javascript object instead: `{f1 : ..., f2 : ...} : RecordName`
 examples:
 
 1.
-    record('R1 : Set = {f1 : T1, f2 : T2}')
+    evRecord('R1 : Set = {f1 : T1, f2 : T2}')
     ≡
-    record('R1/0 = {f1 : T1, f2 : T2}')
+    evRecord('R1/0 = {f1 : T1, f2 : T2}')
     ≡
-    record('R1/0 = {f1, f2 : T2}')
+    evRecord('R1/0 = {f1, f2 : T2}')
     ≡
-    record('R1/0 = {f1, f2}')
+    evRecord('R1/0 = {f1, f2}')
 
 2.
-    record('R2 (a : Set) : Set = {f3}')
+    evRecord('R2 (a : Set) : Set = {f3}')
     ≡
-    record('R2/1 = {f3}')
+    evRecord('R2/1 = {f3}')
 
 
 ### Covariance & contravariance (Dynamic record)
@@ -148,23 +148,40 @@ examples:
 
 ### Declaration
 
-`eval(data('DataName/Arity | DataName [params] = Cnstrs')` (see example)
+`eval(evData('DataName/Arity | DataName [params] = Cnstrs')` (see example)
 
-`eval(codata( [same as record declaration] ))`
+`eval(evCodata( [same as record declaration] ))`
 
-Same as module and record, there are `data_` and `codata_`.
+Same as module and record, there are `data` and `codata`.
 
 
 examples:
 
-    data('List : Set -> Set = \
+    evData('List : Set -> Set = \
             Cons : {a : Set} -> a -> List a -> List a \
           | Nil : {a : Set} -> List a')
     ≡
-    data('List/1 = Cons/2 | Nil/0')
+    evData('List/1 = Cons/2 | Nil/0')
 
 
 
+literal expressions:
+
+    a,b xs=...
+    eval(evle('(a,b) : xs'))
+    =
+    eval('Cons(Pair(a,b),xs)')
+
+    le('(a,b) : xs')
+    =
+    Cons(Pair('a','b'), 'xs')
+
+
+pattern matching assigning (unification):
+
+    assign(le('[a,b,c]') , efg)
+    =
+    'var a = ...; var b = ...; var c = ...;'
 
 
 
@@ -287,7 +304,7 @@ Patterns := list(' ', APattern)
 
 IPattern := '_'
          | Name                           (including variables and constructors)
-         | Constructor Patterns
+         | Constructor Patterns           (introduction form)
          | '(' List(',', Pattern) ')'
          | '[' List(',', Pattern) ']'
          | '(' Pattern ')'
@@ -307,11 +324,12 @@ Observer := '_'
 Type := '{' Name ':' Type '}'    k = 1
       | Type '->' Type           k = 2
       | -Type                    k = 3
-      | '(' List(',', Type) ')'  k = 4
-      | '(' Type ')'             k = 5
-      | RecordTypeDecl           k = 6
-      | '[' Type ']'             k = 7
-      | Name                     k = 8
+      | +Type                    k = 4
+      | '(' List(',', Type) ')'  k = 5
+      | '(' Type ')'             k = 6
+      | RecordTypeDecl           k = 7
+      | '[' Type ']'             k = 8
+      | Name                     k = 9
 
 
 
