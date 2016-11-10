@@ -13,7 +13,7 @@ var nameReg = new RegExp('([a-zA-Z_][a-zA-Z0-9_]*)');
 function Name(n){
   checkType(n,String,'n','Name');
   if(nameReg.test(n))
-    this.name = n;
+    this.text = n;
   else
     throw 'error: Name: wrong format'
 }
@@ -204,8 +204,26 @@ function countArity(type){
 }
 
 //record
-function Record(name,type,fields,arity){
+function FieldVal(type,val){
+  checkType(type,Type,'type','Field');
+
+  this.type = type;
+  this.val = val;
+}
+function RecParam(name,type){
+  checkType(name, Name, 'name', 'RecParam');
+  checkType(type, Type, 'type', 'RecParam');
+
+  this.name = name;
+  this.type = type;
+}
+
+function Record(name,parameters,type,fields){
   checkType(name,Name,'name','Record');
+  checkType(parameters, Array, 'parameters','Record');
+  for(var i=0;i<parameters.length;i++){
+    checkType(parameters[i], RecParam, 'parameters['+i+']', 'Record');
+  }
   if(  type.constructor !== NoType
     && type.constructor !== Type )
     throw "error 1 in Record"
@@ -214,13 +232,18 @@ function Record(name,type,fields,arity){
     && (typeof arity == 'undefined' || arity.constructor !== Number))
     throw "error 2 in Record"
 
-  //fields : {k1 : [type, val], k2 ...}
+  //fields : {k1 : FieldVal, k2 ...}
+  checkType(fields, Object, 'fields', 'Record');
+  for(var k in fields){
+    checkType(fields[k], FieldVal, 'fields['+k+']', 'Record');
+  }
 
   //var countedArity = countArity(type);
 
   this.recordname = name;
+  this.parameters = parameters;
   this.type = type;
-  this.arity = type.constructor === NoType ? arity : countArity(type);
+  this.arity = parameters.length;
   this.fields = fields;
 }
 //module
