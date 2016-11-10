@@ -96,7 +96,7 @@ function Type(t){
   }
 } 
 
-//------- declarations
+function NoType(){}
 
 
 //------- patterns
@@ -166,6 +166,19 @@ function WholePattern(inp){
       throw "error at WholePattern"
   }
 }
+
+//------- declarations
+
+//module
+function Module(name,type,fields){
+}
+//record
+function Record(name,type,fields){
+}
+//data
+function Data(name,type
+//codata
+function Codata
 
 //------- Q.J.F. API
 // module,record,data,codata,func,REC,case; literal expression, pattern assignment
