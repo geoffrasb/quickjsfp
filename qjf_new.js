@@ -1,9 +1,10 @@
 
 
 function checkType(x,types,xname,place){
-  if(types.constructor !== Array && x.constructor !== type)
-    throw "type error: "+place+": "+xname+" should be a "+type.name+", but given: "+x.constructor.name;
-  else if(types.constructor === Array){
+  if(types.constructor !== Array){
+    if(x.constructor !== types)
+      throw "type error: "+place+": "+xname+" should be a "+types.name+", but given: "+x.constructor.name;
+  }else{
     var which_got_checked = [];
     types.forEach(function(y){
       if(x.constructor === y)
@@ -15,15 +16,13 @@ function checkType(x,types,xname,place){
         types_to_match.push(y.name);
       })
       throw "type error: "+place+": "+xname+" should be one of:["
-            +types_to_match.join(',')+"], but given: "+x.constructor.name;
+            +types_to_match.join(',')+"], but given a "+x.constructor.name;
     }
-  }else{
-    throw "error 1 at checkType"
   }
 }
 function checkValue(x,v,xname,place){
   if(x != v)
-    throw "value error: "+place+": "+xname+" should be: "+v.toString()+", but given: "+x.toString();
+    throw "value error: "+place+": "+xname+" should be: "+v.toString()+", but given "+x.toString();
 }
 function checkArrayType(x,type,xname,place){
   checkType(x,Array,xname,place);
