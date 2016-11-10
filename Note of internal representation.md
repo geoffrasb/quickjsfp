@@ -274,19 +274,17 @@ examples:
 
 `list(',','pat')` means accepting things like `'pat , pat , pat'`.
 
-Name := lName | uName (lower case or upper case)
-Constructor := Name
 
-ModuleDecl := Name ('/' Int | list(' ', Type))
-DataDecl   := NameType '=' list('|', NameType )
+ModuleDecl := Name list(' ', Param)
+DataDecl   := Name ':' Type '=' list('|', Name : Type )
 CodataDecl := RecordDecl
 RecordDecl := NameType '=' RecordTypeDecl
 
 RecordTypeDecl := '{' list(',', Name +(':' Type)) '}'
 
 
-NameType  :=  Name ((':' Type) | '/' Int)
-uNameType := uName ((':' Type) | '/' Int)
+Param  :=  '{' Name ':' Type '}'
+        |  '(' Name ':' Type ')'
 
 
 WholePattern := Patterns | CPattern
@@ -313,17 +311,28 @@ Observer := '_'
           | Name
 
 
-Type := '{' Name ':' Type '}'    k = 1
-      | Type '->' Type           k = 2
-      | -Type                    k = 3
-      | +Type                    k = 4
-      | '(' List(',', Type) ')'  k = 5
-      | '(' Type ')'             k = 6
-      | RecordTypeDecl           k = 7
-      | '[' Type ']'             k = 8
-      | Name                     k = 9
+Type := list(' ', Param) '->' Type_  
+      | Param
+      | '-' Type_
+      | '+' Type_
+      | '(' List(',', Type) ')'  
+      | '(' Type ')'             
+      | RecordTypeDecl           
+      | '[' Type ']'             
+      | Name
+      | '_'              
 
 
+Type_ := Param
+      | Type_ '->' Type_
+      | '-' Type_
+      | '+' Type_
+      | '(' List(',', Type) ')'  
+      | '(' Type ')'             
+      | RecordTypeDecl           
+      | '[' Type ']'             
+      | Name
+      | '_'
 
 
 
