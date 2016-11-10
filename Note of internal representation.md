@@ -11,7 +11,7 @@
 ### declaration
 
 ```
-eval(evModule('moduleName [params]|moduleName/arity'
+eval(evModule('moduleName [params]'
 , function(args){
   ...
   return exporting(...)({...})
@@ -32,20 +32,16 @@ examples:
 1.
     evModule('Functor a', function(a){ ... })
     ≡
-    evModule('Functor/1', function(a){ ... })
+    evModule('Functor (a : A)', function(a){ ... })
     ≡
     'var Functor = .../*internal representation of the module*/;'
 
 
 2.
-    evModule('dummy', function(){ ... })
-    ≡
-    evModule('dummy/0, function(){ ... })
-
 
     evModule('Monad (a : Applicative b)', function(a){ ... })
     ≡
-    evModule('Monad/1', function(a){ ... })
+    evModule('Monad a', function(a){ ... })
 
 
 ### exporting
@@ -97,7 +93,7 @@ example:
 
 ### Declaration
 
-`eval(evRecord('RecordName/Arity | RecordName [params] = {f1 : Type1, f2 : Type2 ...} '))`
+`eval(evRecord('RecordName [params] = {f1 : Type1, f2 : Type2 ...} '))`
 
 There's also a version `record`.
 
@@ -111,16 +107,14 @@ examples:
 1.
     evRecord('R1 : Set = {f1 : T1, f2 : T2}')
     ≡
-    evRecord('R1/0 = {f1 : T1, f2 : T2}')
+    evRecord('R1 : Set = {f1, f2 : T2}')
     ≡
-    evRecord('R1/0 = {f1, f2 : T2}')
-    ≡
-    evRecord('R1/0 = {f1, f2}')
+    evRecord('R1 = {f1, f2}')
 
 2.
-    evRecord('R2 (a : Set) : Set = {f3}')
+    evRecord('R2 (a : Set) (b : Nat) : Set 1 = {f3}')
     ≡
-    evRecord('R2/1 = {f3}')
+    evRecord('R2 a b : c = {f3}')
 
 
 ### Covariance & contravariance (Dynamic record)
@@ -148,7 +142,7 @@ examples:
 
 ### Declaration
 
-`eval(evData('DataName/Arity | DataName [params] = Cnstrs')` (see example)
+`eval(evData('DataName [params] = Cnstrs')` (see example)
 
 `eval(evCodata( [same as record declaration] ))`
 
@@ -161,7 +155,7 @@ examples:
             Cons : {a : Set} -> a -> List a -> List a \
           | Nil : {a : Set} -> List a')
     ≡
-    evData('List/1 = Cons/2 | Nil/0')
+    evData('List : _ -> _ = Cons : _ -> _ -> _ | Nil : _')
 
 
 
