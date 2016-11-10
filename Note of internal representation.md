@@ -46,7 +46,7 @@ examples:
 
 ### exporting
 
-    exporting(x,y)({ z : z1 })
+    exporting('x, y')({ z : z1 })
     ≡
     {x : x, y : y, z : z1}
 
