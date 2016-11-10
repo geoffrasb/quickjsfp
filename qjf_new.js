@@ -315,7 +315,10 @@ function Data(name,type,cnstrs){
   this.name = name;
   this.type = type;
   this.constructors = cnstrs;
+  this.arity = countArity(type);
 }
+
+
 //codata
 function Observer(name,type){
   checkType(name, Name, 'name', 'Observer');
@@ -325,6 +328,14 @@ function Observer(name,type){
   this.type = type;
 }
 function Codata(name,type,observers){
+  checkType(name, Name, 'name', 'Codata');
+  checkType(type, Type, 'type', 'Codata');
+  checkArrayType(observers, Observer, 'observers', 'Codata');
+
+  this.name = name;
+  this.type = type;
+  this.observers = observers;
+  this.arity = countArity(type);
 }
 
 //------- Q.J.F. API
