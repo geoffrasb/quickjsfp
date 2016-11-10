@@ -1,8 +1,25 @@
 
 
-function checkType(x,type,xname,place){
-  if(x.constructor !== type)
+function checkType(x,types,xname,place){
+  if(types.constructor !== Array && x.constructor !== type)
     throw "type error: "+place+": "+xname+" should be a "+type.name+", but given: "+x.constructor.name;
+  else if(types.constructor === Array){
+    var which_got_checked = [];
+    types.forEach(function(y){
+      if(x.constructor === y)
+        which_got_checked.push(y);
+    });
+    if(which_got_checked.length==0){
+      var types_to_match = [];
+      types.forEach(function(y){
+        types_to_match.push(y.name);
+      })
+      throw "type error: "+place+": "+xname+" should be one of:["
+            +types_to_match.join(',')+"], but given: "+x.constructor.name;
+    }
+  }else{
+    throw "error 1 at checkType"
+  }
 }
 function checkValue(x,v,xname,place){
   if(x != v)
@@ -132,29 +149,38 @@ function ConsPattern(x,xs){
 function NilPattern(){}
 
 function IPattern(inp){
-  switch(inp.constructor){
-    case DontCare:
-    case Name:
-    case IntroForm:
-    case Tuple:
-    case List:
-    case IPattern:
-    case RecordPattern:
-    case ConsPattern:
-    case NilPattern:
-      this.ipattern = inp;
-      break;
-    default:
-      throw "error at IPattern"
-  }
+  checkType(inp, [ DontCare, Name, IntroForm, Tuple
+                 , List, IPattern, RecordPattern
+                 , ConsPattern, NilPattern]
+            , 'inp', 'IPattern');
+  this.ipattern = inp;
+  // switch(inp.constructor){
+  //   case DontCare:
+  //   case Name:
+  //   case IntroForm:
+  //   case Tuple:
+  //   case List:
+  //   case IPattern:
+  //   case RecordPattern:
+  //   case ConsPattern:
+  //   case NilPattern:
+  //     this.ipattern = inp;
+  //     break;
+  //   default:
+  //     throw "error at IPattern"
+  // }
 }
 
 function CPattern(observer, patterns){
-  if(observer.constructor !== DontCare
-    && observer.constructor !== Name)
-    throw "cpattern error"
-  checkType(patterns,Array,'patterns','CPattern');
+  checkType(observer, [DontCare, Name], 'observer', 'CPattern');
+  // if(observer.constructor !== DontCare
+  //   && observer.constructor !== Name)
+  //   throw "cpattern error"
+  
   //patterns : [IPattern]
+  checkType(patterns,Array,'patterns','CPattern');
+  for(var i=0;i<patterns.length;i++){
+    checkType(patterns[i], IPattern, 'patterns['+i+']', 'CPattern');
 
   this.observer = observer;
   this.patterns = patterns;
@@ -284,6 +310,9 @@ function Data(name,type,cnstrs){
   this.constructors = cnstrs;
 }
 //codata
+function Observer(name,type){
+  checkType(name, Name, 'name', 'Observer');
+  checkType(type.type, RealType
 function Codata(name,type,observers){
 }
 
