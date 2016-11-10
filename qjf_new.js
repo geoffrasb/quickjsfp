@@ -9,9 +9,13 @@ function checkValue(x,v,xname,place){
     throw "value error: "+place+": "+xname+" should be: "+v.toString()+", but given: "+x.toString();
 }
 
+var nameReg = new RegExp('([a-zA-Z_][a-zA-Z0-9_]*)');
 function Name(n){
   checkType(n,String,'n','Name');
-  this.name = n;
+  if(nameReg.test(n))
+    this.name = n;
+  else
+    throw 'error: Name: wrong format'
 }
 function lName(n){
   checkType(n,String,'n','lName');
@@ -80,19 +84,19 @@ function TypeVar(varname){
 }
 
 function Type(t){
-  if(  t.constructor === ImplicitType
-    || t.constructor === ArrowType
-    || t.constructor === SubType
-    || t.constructor === SupType
-    || t.constructor === Tuple
-    || t.constructor === RecordType
-    || t.constructor === ListType
-    || t.constructor === RealType
-    || t.constructor === TypeVar
-  ){
-    this.type = t;
-  }else{
-    console.log('type error: new Type: invalid type kind');
+  switch(t.constructor){
+    case ImplicitType:
+    case ArrowType:
+    case SubType:
+    case SupType:
+    case Tuple:
+    case RecordType:
+    case ListType:
+    case RealType:
+    case TypeVar:
+      this.type = t;
+    default:
+      throw 'type error: new Type: invalid type kind'
   }
 } 
 
@@ -169,9 +173,39 @@ function WholePattern(inp){
 
 //------- declarations
 
+function countArity(type){
+  if(  type.constructor !== NoType
+    && type.constructor !== Type )
+    throw "error 1 in countArity"
+
+  if(type.constructor === NoType)
+    return 0;
+
+  function rec(t,count){
+    switch(t.type.constructor){
+      case ArrowType:
+        return rec(t.type.righttype, count+1);
+      case ImplicitType:
+        return count;
+      case SubType:
+      case SupType:
+      case Tuple:
+      case RecordType:
+      case ListType:
+      case RealType:
+      case TypeVar:
+        return count+1;
+      default:
+        throw 'error in rec of countArity'
+    }
+  }
+
+  return rec(type,0);
+}
+
 //record
 function Record(name,type,fields,arity){
-  checkType(name,String,'name','Record');
+  checkType(name,Name,'name','Record');
   if(  type.constructor !== NoType
     && type.constructor !== Type )
     throw "error 1 in Record"
@@ -190,10 +224,11 @@ function Record(name,type,fields,arity){
   this.fields = fields;
 }
 //module
-function Module(name,type,fields,arity){
-}
+// modules are actually records
+
 //data
 function Data(name,type,cnstrs,arity){
+  checkType(name, Name
 }
 //codata
 function Codata(name,type,observers,arity){
