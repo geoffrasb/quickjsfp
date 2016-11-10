@@ -305,9 +305,9 @@ Patterns := list(' ', APattern)
 IPattern := '_'
          | Name                           (including variables and constructors)
          | Constructor Patterns           (introduction form)
-         | '(' List(',', Pattern) ')'
-         | '[' List(',', Pattern) ']'
-         | '(' Pattern ')'
+         | '(' List(',', IPattern) ')'
+         | '[' List(',', IPattern) ']'
+         | '(' IPattern ')'
          | ?(lName '@') RecordPattern
          | IPattern ':' IPattern
          | []
