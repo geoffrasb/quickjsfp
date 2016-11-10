@@ -25,6 +25,12 @@ function checkValue(x,v,xname,place){
   if(x != v)
     throw "value error: "+place+": "+xname+" should be: "+v.toString()+", but given: "+x.toString();
 }
+function checkArrayType(x,type,xname,place){
+  checkType(x,Array,xname,place);
+  for(var i=0;i<x.length;i++){
+    checkType(x[i], type, xname+'['+i+']', place);
+  }
+}
 
 var nameReg = new RegExp('([a-zA-Z_][a-zA-Z0-9_]*)');
 function Name(n){
@@ -176,25 +182,31 @@ function CPattern(observer, patterns){
   // if(observer.constructor !== DontCare
   //   && observer.constructor !== Name)
   //   throw "cpattern error"
-  
+
   //patterns : [IPattern]
   checkType(patterns,Array,'patterns','CPattern');
   for(var i=0;i<patterns.length;i++){
     checkType(patterns[i], IPattern, 'patterns['+i+']', 'CPattern');
+  }
 
   this.observer = observer;
   this.patterns = patterns;
 }
 
 function WholePattern(inp){
-  switch(inp.constructor){
-    case Array:
-    case CPattern:
-      this.wholepattern = inp;
-      break;
-    default:
-      throw "error at WholePattern"
+  checkType(inp, [Array,CPattern], 'inp', 'WholePattern');
+  if(inp.constructor === Array){
+    checkArrayType(inp, IPattern, 'inp', 'WholePattern');
   }
+  this.wholepattern = inp;
+  // switch(inp.constructor){
+  //   case Array:
+  //   case CPattern:
+  //     this.wholepattern = inp;
+  //     break;
+  //   default:
+  //     throw "error at WholePattern"
+  // }
 }
 
 //------- declarations
@@ -216,21 +228,21 @@ function RecParam(name,type){
 
 function Record(name,parameters,type,fields){
   checkType(name,Name,'name','Record');
-  checkType(parameters, Array, 'parameters','Record');
-  for(var i=0;i<parameters.length;i++){
-    checkType(parameters[i], RecParam, 'parameters['+i+']', 'Record');
-  }
-  if(  type.constructor !== NoType
-    && type.constructor !== Type )
-    throw "error 1 in Record"
+  checkArrayType(parameters, RecParam, 'parameters', 'Record');
+  // checkType(parameters, Array, 'parameters','Record');
+  // for(var i=0;i<parameters.length;i++){
+  //   checkType(parameters[i], RecParam, 'parameters['+i+']', 'Record');
+  // }
+  checkType(type, [NoType, Type], 'type', 'Record');
+  // if(  type.constructor !== NoType
+  //   && type.constructor !== Type )
+  //   throw "error 1 in Record"
 
   //fields : {k1 : FieldVal, k2 ...}
   checkType(fields, Object, 'fields', 'Record');
   for(var k in fields){
     checkType(fields[k], FieldVal, 'fields['+k+']', 'Record');
   }
-
-  //var countedArity = countArity(type);
 
   this.recordname = name;
   this.parameters = parameters;
@@ -241,10 +253,8 @@ function Record(name,parameters,type,fields){
 //module
 function Module(name, parameters, fields){
   checkType(name, Name, 'name', 'Module');
-  checkType(parameters, Array, 'parameters','Module');
-  for(var i=0;i<parameters.length;i++){
-    checkType(parameters[i], RecParam, 'parameters['+i+']', 'Module');
-  }
+  checkArrayType(parameters, RecParam, 'parameters', 'Module');
+  
   //fields : {k1 : FieldVal, k2 ...}
   checkType(fields, Object, 'fields', 'Record');
   for(var k in fields){
@@ -300,10 +310,7 @@ function Constructor(name, type){
 function Data(name,type,cnstrs){
   checkType(name, Name, 'name', 'Data');
   checkType(type, Type, 'type', 'Data');
-  checkType(cnstrs, Array, 'cnstrs', 'Data');
-  for(var i=0;i<cnstrs.length;i++){
-    checkType(cnstrs[i], Constructor, 'cnstrs['+i+']', 'Data');
-  }
+  checkArrayType(cnstrs, Constructor, 'cnstrs', 'Data');
 
   this.name = name;
   this.type = type;
@@ -312,7 +319,11 @@ function Data(name,type,cnstrs){
 //codata
 function Observer(name,type){
   checkType(name, Name, 'name', 'Observer');
-  checkType(type.type, RealType
+  checkType(type.type, [RealType, NoType], 'type', 'Observer');
+
+  this.name = name;
+  this.type = type;
+}
 function Codata(name,type,observers){
 }
 
