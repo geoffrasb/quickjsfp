@@ -173,36 +173,6 @@ function WholePattern(inp){
 
 //------- declarations
 
-function countArity(type){
-  if(  type.constructor !== NoType
-    && type.constructor !== Type )
-    throw "error 1 in countArity"
-
-  if(type.constructor === NoType)
-    return 0;
-
-  function rec(t,count){
-    switch(t.type.constructor){
-      case ArrowType:
-        return rec(t.type.righttype, count+1);
-      case ImplicitType:
-        return count;
-      case SubType:
-      case SupType:
-      case Tuple:
-      case RecordType:
-      case ListType:
-      case RealType:
-      case TypeVar:
-        return count+1;
-      default:
-        throw 'error in rec of countArity'
-    }
-  }
-
-  return rec(type,0);
-}
-
 //record
 function FieldVal(type,val){
   checkType(type,Type,'type','Field');
@@ -227,10 +197,6 @@ function Record(name,parameters,type,fields){
   if(  type.constructor !== NoType
     && type.constructor !== Type )
     throw "error 1 in Record"
-
-  if(  type.constructor === NoType
-    && (typeof arity == 'undefined' || arity.constructor !== Number))
-    throw "error 2 in Record"
 
   //fields : {k1 : FieldVal, k2 ...}
   checkType(fields, Object, 'fields', 'Record');
@@ -265,14 +231,62 @@ function Module(name, parameters, fields){
   this.fields = fields;
 }
 
+
+
+function countArity(type){
+  if(  type.constructor !== NoType
+    && type.constructor !== Type )
+    throw "error 1 in countArity"
+
+  if(type.constructor === NoType)
+    return 0;
+
+  function rec(t,count){
+    switch(t.type.constructor){
+      case ArrowType:
+        return rec(t.type.righttype, count+1);
+      case ImplicitType:
+        return count;
+      case SubType:
+      case SupType:
+      case Tuple:
+      case RecordType:
+      case ListType:
+      case RealType:
+      case TypeVar:
+        return count+1;
+      default:
+        throw 'error in rec of countArity'
+    }
+  }
+
+  return rec(type,0);
+}
+
 //data
-function Data(name,type,cnstrs,arity){
-  checkType(name, Name
+function Constructor(name, type){
+  checkType(name, Name, 'name', 'Constructor');
+  checkType(type, Type, 'type', 'Constructor');
+  this.name = name;
+  this.type = type;
+  this.arity = countArity(type);
+}
+function Data(name,type,cnstrs){
+  checkType(name, Name, 'name', 'Data');
+  checkType(type, Type, 'type', 'Data');
+  checkType(cnstrs, Array, 'cnstrs', 'Data');
+  for(var i=0;i<cnstrs.length;i++){
+    checkType(cnstrs[i], Constructor, 'cnstrs['+i+']', 'Data');
+  }
+
+  this.name = name;
+  this.type = type;
+  this.constructors = cnstrs;
 }
 //codata
-function Codata(name,type,observers,arity){
+function Codata(name,type,observers){
 }
 
 //------- Q.J.F. API
-// module,record,data,codata,func,REC,case; literal expression, pattern assignment
+// module,record,data,codata,func,REC,case; literal expression
 
