@@ -116,6 +116,7 @@ function Type(t){
     case ListType:
     case RealType:
     case TypeVar:
+    case DontCare:
       this.type = t;
     default:
       throw 'type error: new Type: invalid type kind'
@@ -338,5 +339,7 @@ function Codata(name,type,observers){
 }
 
 //------- Q.J.F. API
-// module,record,data,codata,func,REC,case; literal expression
+// module,exporting,record,open,data,codata,func,REC,case; literal expression
+
+function module(
 
