@@ -247,7 +247,23 @@ function Record(name,parameters,type,fields){
   this.fields = fields;
 }
 //module
-// modules are actually records
+function Module(name, parameters, fields){
+  checkType(name, Name, 'name', 'Module');
+  checkType(parameters, Array, 'parameters','Module');
+  for(var i=0;i<parameters.length;i++){
+    checkType(parameters[i], RecParam, 'parameters['+i+']', 'Module');
+  }
+  //fields : {k1 : FieldVal, k2 ...}
+  checkType(fields, Object, 'fields', 'Record');
+  for(var k in fields){
+    checkType(fields[k], FieldVal, 'fields['+k+']', 'Record');
+  }
+
+  this.modulename = name;
+  this.parameters = parameters;
+  this.arity = parameters.length;
+  this.fields = fields;
+}
 
 //data
 function Data(name,type,cnstrs,arity){
