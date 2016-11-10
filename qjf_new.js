@@ -169,16 +169,35 @@ function WholePattern(inp){
 
 //------- declarations
 
-//module
-function Module(name,type,fields){
-}
 //record
-function Record(name,type,fields){
+function Record(name,type,fields,arity){
+  checkType(name,String,'name','Record');
+  if(  type.constructor !== NoType
+    && type.constructor !== Type )
+    throw "error 1 in Record"
+
+  if(  type.constructor === NoType
+    && (typeof arity == 'undefined' || arity.constructor !== Number))
+    throw "error 2 in Record"
+
+  //fields : {k1 : [type, val], k2 ...}
+
+  //var countedArity = countArity(type);
+
+  this.recordname = name;
+  this.type = type;
+  this.arity = type.constructor === NoType ? arity : countArity(type);
+  this.fields = fields;
+}
+//module
+function Module(name,type,fields,arity){
 }
 //data
-function Data(name,type
+function Data(name,type,cnstrs,arity){
+}
 //codata
-function Codata
+function Codata(name,type,observers,arity){
+}
 
 //------- Q.J.F. API
 // module,record,data,codata,func,REC,case; literal expression, pattern assignment
