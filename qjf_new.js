@@ -341,5 +341,27 @@ function Codata(name,type,observers){
 //------- Q.J.F. API
 // module,exporting,record,open,data,codata,func,REC,case; literal expression
 
-function module(
+//function module(
+
+
+
+function evExport(args){
+  checkType(args, String, 'args', 'exporting');
+
+  var res = '{';
+  args.split(',').forEach(function(x){
+    var y = x.trim();
+    res += y + ':' + y + ',';
+  });
+  return res.slice(0,-1)+'}';
+}
+
+
+
+
+
+
+
+
+
 
