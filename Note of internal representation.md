@@ -310,6 +310,7 @@ IPattern := '_'
          | '(' Pattern ')'
          | ?(lName '@') RecordPattern
          | IPattern ':' IPattern
+         | []
 
 RecordPattern := '{' ?((Name | '_') '|') list(',', lName '=' IPattern) '}'
 
