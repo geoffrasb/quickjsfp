@@ -276,10 +276,7 @@ examples:
 
 ## Parsing
 
-* Types' names should be headed with upper case;
-* Constructors' are not necessarily.
-* Names of fields of a record should be headed with a lower case.
-* No constraint on variable names.
+* No constraint on names.
 
 `list(',','pat')` means accepting things like `'pat , pat , pat'`.
 
@@ -287,11 +284,11 @@ Name := lName | uName (lower case or upper case)
 Constructor := Name
 
 ModuleDecl := Name ('/' Int | list(' ', Type))
-DataDecl   := uNameType '=' list('|', NameType )
+DataDecl   := NameType '=' list('|', NameType )
 CodataDecl := RecordDecl
-RecordDecl := uNameType '=' RecordTypeDecl
+RecordDecl := NameType '=' RecordTypeDecl
 
-RecordTypeDecl := '{' list(',', lName +(':' Type)) '}'
+RecordTypeDecl := '{' list(',', Name +(':' Type)) '}'
 
 
 NameType  :=  Name ((':' Type) | '/' Int)
@@ -308,18 +305,18 @@ IPattern := '_'
          | '(' List(',', IPattern) ')'
          | '[' List(',', IPattern) ']'
          | '(' IPattern ')'
-         | ?(lName '@') RecordPattern
+         | ?(Name '@') RecordPattern
          | IPattern ':' IPattern
          | []
 
-RecordPattern := '{' ?((Name | '_') '|') list(',', lName '=' IPattern) '}'
+RecordPattern := '{' ?((Name | '_') '|') list(',', Name '=' IPattern) '}'
 
 
 CPattern :=
           | Observer '*'
           | Observer '(' '*' Patterns ')'
 Observer := '_'
-          | lName
+          | Name
 
 
 Type := '{' Name ':' Type '}'    k = 1
