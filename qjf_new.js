@@ -31,7 +31,7 @@ function checkArrayType(x,type,xname,place){
   }
 }
 
-var nameReg = new RegExp('([a-zA-Z_][a-zA-Z0-9_]*)');
+var nameReg = new RegExp('([a-zA-Z_$][a-zA-Z0-9_$]*)');
 function Name(n){
   checkType(n,String,'n','Name');
   if(nameReg.test(n))
