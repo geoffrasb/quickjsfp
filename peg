@@ -23,7 +23,7 @@ Param = '(' _ n:Name _ ':' _ t:Type ')' {
        return new Type(new ParamType(false,n,t))
         }
     / '{' _ n:Name _ ':' _ t:Type '}' { 
-        return new Type(new ParamType(false,n,t))
+        return new Type(new ParamType(true,n,t))
         }
 
 
@@ -36,9 +36,19 @@ SingType = p:Param     { return p; }
            }
          / '(' _ t:Type _ ')' {return t;}
          / r:RecordTypeDecl   {return r;}
-         / '[' _ t:Type _ ']' {return new Type(ListType(t));}
+         / '[' _ t:Type _ ']' {return new Type(new ListType(t));}
          / '_'     { return new Type(new DontCare()); }
+         / c:Name _ args:SpaceNames {
+             args.unshift(c);
+             return new Type(new ComposeType(args));
+           }
          / n:Name  { return new Type(new NameType(n)); }
+
+SpaceNames = n:Name !(_ Name)    {return [n];}
+      / n:Name _ ns:SpaceNames {
+                ns.unshift(n);
+                return ns;
+              }
 
 TypeTuple = t:Type &(_ ')') { return [t]; }
       / t:Type _ ',' _ ts:TypeTuple {
