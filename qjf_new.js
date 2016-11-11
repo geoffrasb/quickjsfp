@@ -364,7 +364,7 @@ function Data(name,type,cnstrs){
 //codata
 function Observer(name,type){
   checkType(name, Name, 'name', 'Observer');
-  checkType(type.type, [RealType, NoType], 'type', 'Observer');
+  checkType(type.type, [Type, NoType], 'type', 'Observer');
 
   this.name = name;
   this.type = type;
