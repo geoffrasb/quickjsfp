@@ -10,10 +10,23 @@ Type = ps:Params _ '->' _ t:Type_ {
         }else{
           return new Type(new ArrowType(ps,t));
         }}
+     / t:Type_     {return t;}
    / st:SingType {return st;}
 
 Type_ = st:SingType _ '->' _ t:Type_ {return new Type(new ArrowType(st,t));}
-      
+    / st:SingType {return st;}
+
+Params = p:Param &(_ '->')   { return p }
+     / p:Param _ ps:Params { return new Type(new ArrowType(p,ps)) }
+ 
+Param = '(' _ n:Name _ ':' _ t:Type ')' { 
+       return new Type(new ParamType(false,n,t))
+        }
+    / '{' _ n:Name _ ':' _ t:Type '}' { 
+        return new Type(new ParamType(false,n,t))
+        }
+
+
 SingType = p:Param     { return p; }
          / '-' _ t:Type_ { return new Type(new SubType(t)); }
          / '+' _ t:Type_ { return new Type(new SupType(t)); }
@@ -40,15 +53,7 @@ listFields = n:Name _ ':' _ t:Type &(_ '}') { return [[n,t]];}
                 return lf;
              }
  
-Params = p:Param !.        { return p }
-     / p:Param _ ps:Params { return new Type(new ArrowType(p,ps)) }
- 
-Param = '(' _ n:Name _ ':' _ t:Type ')' { 
-       return new Type(new ParamType(false,n,t))
-        }
-    / '{' _ n:Name _ ':' _ t:Type '}' { 
-        return new Type(new ParamType(false,n,t))
-        }
+
 
 
 _ "whitespace"
