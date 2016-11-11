@@ -102,8 +102,10 @@ function ListType(t){
   this.listype = t;
 }
 
-function RealType(introform){
+function ComposeType(introform){
   //introform : [Constructor, arg1, arg2...]
+  checkArrayType(introform, Name, 'introform', 'ComposeType');
+
   this.introform = introform;
 }
 
@@ -121,7 +123,7 @@ function Type(t){
     case Tuple:
     case RecordType:
     case ListType:
-    case RealType:
+    case ComposeType:
     case NameType:
     case DontCare:
       this.type = t;
@@ -328,7 +330,7 @@ function countArity(type){
       case Tuple:
       case RecordType:
       case ListType:
-      case RealType:
+      case ComposeType:
       case NameType:
         return count+1;
       default:
