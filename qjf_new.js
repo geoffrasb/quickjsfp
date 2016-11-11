@@ -131,6 +131,20 @@ function NoType(){}
 // type parsing
 
 
+function lastArrowOfChain(t){
+  checkType(t, ArrowType, 't', 'lastArrowOfChain');
+  checkType(t.righttype, Type, 't.righttype', 'lastArrowOfChain');
+
+  if(t.righttype.type.constructor === ArrowType){
+    return lastArrowOfChain(t.righttype.type);
+  }else{
+    return t;
+  }
+}
+
+
+
+
 
 
 
