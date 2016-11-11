@@ -2,6 +2,18 @@
 
  
 
+ModuleDecl = n:Name _ ts:ModParams  {return {name : n, params:ts}}
+ModParams = !.            {return [];}
+      / n:Name _ ts:ModParams {
+              var x = new Type(new ParamType(false,n,new Type(insDontCare)));
+              ts.unshift(x);
+              return ts;
+            }
+          / t:Param _ ts:ModParams {
+             ts.unshift(t)
+             return ts;
+            }
+
 Type = ps:Params _ '->' _ t:Type_ {
     if(ps.type.constructor === ArrowType){
       var last = lastArrowOfChain(ps.type);
@@ -37,7 +49,7 @@ SingType = p:Param     { return p; }
          / '(' _ t:Type _ ')' {return t;}
          / r:RecordTypeDecl   {return r;}
          / '[' _ t:Type _ ']' {return new Type(new ListType(t));}
-         / '_'     { return new Type(new DontCare()); }
+         / '_'     { return new Type(insDontCare); }
          / c:Name _ args:SpaceNames {
              args.unshift(c);
              return new Type(new ComposeType(args));
@@ -62,8 +74,6 @@ listFields = n:Name _ ':' _ t:Type &(_ '}') { return [[n,t]];}
               lf.unshift([n,t]);
                 return lf;
              }
- 
-
 
 
 _ "whitespace"

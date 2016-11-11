@@ -49,6 +49,7 @@ function uName(n){
 }
 
 function DontCare(){}
+var insDontCare = new DontCare();
 
 function Tuple(n,items){
   checkType(n,Number,'n','Tuple(internal)');
