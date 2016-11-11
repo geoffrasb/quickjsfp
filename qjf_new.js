@@ -88,7 +88,12 @@ function SupType(t){
   this.suptype = t;
 }
 function RecordType(keytypes){
-  //keytypes : [['k1', type], ['k2', type] ...]
+  //keytypes : [[Name, Type], [Name, Type] ...]
+  checkArrayType(keytypes, Array, 'keytypes', 'RecordType');
+  for(var i=0;i<keytypes.length;i++){
+    checkType(keytypes[i][0], Name, 'keytypes['+i+'][0]', 'RecordType');
+    checkType(keytypes[i][1], Type, 'keytypes['+i+'][1]', 'RecordType');
+  }
 
   this.keytypes = keytypes;
 }
