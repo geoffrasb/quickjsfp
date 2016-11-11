@@ -120,6 +120,7 @@ function Type(t){
     case NameType:
     case DontCare:
       this.type = t;
+      break;
     default:
       throw 'type error: new Type: invalid type kind'
   }
