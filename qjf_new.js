@@ -339,7 +339,7 @@ function countArity(type){
     }
   }
 
-  return rec(type,0);
+  return rec(type,0)-1;
 }
 
 //data
