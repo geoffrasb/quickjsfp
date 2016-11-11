@@ -103,7 +103,7 @@ function RealType(introform){
 }
 
 function TypeVar(varname){
-  checkType(varname,String,'varname','TypeVar');
+  checkType(varname,Name,'varname','TypeVar');
   this.varname = varname;
 }
 
