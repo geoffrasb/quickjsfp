@@ -2,6 +2,16 @@
 
  
 
+DataDecl = n:Name _ ':' _ t:Type _ '=' _ c:Name _ ':' _ ct:Type _ cs:Constructors {
+            cs.unshift(new Constructor(c,ct));
+            return new Data(n,t,cs);
+       }
+Constructors = !. {return [];}
+       / c:Name _ ':' _ ct:Type _ cs:Constructors {
+                 cs.unshift(new Constructor(c,ct))
+                 return cs;
+               }
+
 ModuleDecl = n:Name _ ts:ModParams  {return {name : n, params:ts}}
 ModParams = !.            {return [];}
       / n:Name _ ts:ModParams {
