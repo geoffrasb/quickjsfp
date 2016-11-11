@@ -65,10 +65,12 @@ function List(items){
 
 //----type
 
-function ImplicitType(n,t){
-  checkType(n,Name,'n','ImplicitType');
+function ParamType(i,n,t){
+  checkType(i,Boolean,'i', 'ParamType');
+  checkType(n,Name,'n','ParamType');
   //t : Type
 
+  this.implicit = i;
   this.name = n;
   this.type = t;
 }
@@ -107,7 +109,7 @@ function TypeVar(varname){
 
 function Type(t){
   switch(t.constructor){
-    case ImplicitType:
+    case ParamType:
     case ArrowType:
     case SubType:
     case SupType:
@@ -124,6 +126,24 @@ function Type(t){
 } 
 
 function NoType(){}
+
+
+// type parsing
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 //------- patterns
@@ -281,8 +301,8 @@ function countArity(type){
     switch(t.type.constructor){
       case ArrowType:
         return rec(t.type.righttype, count+1);
-      case ImplicitType:
-        return count;
+      case ParamType:
+        return t.type.implicit ? count : count+1;
       case SubType:
       case SupType:
       case Tuple:
@@ -341,7 +361,10 @@ function Codata(name,type,observers){
 //------- Q.J.F. API
 // module,exporting,record,open,data,codata,func,REC,case; literal expression
 
-//function module(
+function module(decstr, body){
+  //body needs to be binded
+
+}
 
 
 
