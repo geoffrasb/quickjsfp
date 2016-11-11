@@ -2,12 +2,17 @@
 
  
 
-DataDecl = n:Name _ ':' _ t:Type _ '=' _ c:Name _ ':' _ ct:Type _ cs:Constructors {
-            cs.unshift(new Constructor(c,ct));
-            return new Data(n,t,cs);
-       }
-Constructors = !. {return [];}
-       / c:Name _ ':' _ ct:Type _ cs:Constructors {
+DataDecl = l:DataLeft _  '=' _ r:DataRight {return new Data(l[0],l[1],l[2],r);}
+DataLeft = n:Name _ ps:DataParams _ ':' _ t:Type _ {return [n,ps,t];}
+DataParams =  &(_ '=') {return []}
+      / p:Param _ ps:DataPrams {
+                ps.unshift(p);
+                return ps;
+              }
+DataRight = !. {return []} 
+      / cs:Constructors {return cs}
+Constructors = c:Name _ ':' _ ct:Type _ !. {return [new Constructor(c,ct)];}
+      /  c:Name _ ':' _ ct:Type _ '|' _ cs:Constructors {
                  cs.unshift(new Constructor(c,ct))
                  return cs;
                }
@@ -24,7 +29,7 @@ ModParams = !.            {return [];}
              return ts;
             }
 
-Type = ps:Params _ '->' _ t:Type_ {
+Type = ps:TypeParams _ '->' _ t:Type_ {
     if(ps.type.constructor === ArrowType){
       var last = lastArrowOfChain(ps.type);
       last.righttype = new Type(new ArrowType(last.righttype, t));
@@ -38,7 +43,7 @@ Type = ps:Params _ '->' _ t:Type_ {
 Type_ = st:SingType _ '->' _ t:Type_ {return new Type(new ArrowType(st,t));}
     / st:SingType {return st;}
 
-Params = p:Param &(_ '->')   { return p }
+TypeParams = p:Param &(_ '->')   { return p }
      / p:Param _ ps:Params { return new Type(new ArrowType(p,ps)) }
  
 Param = '(' _ n:Name _ ':' _ t:Type ')' { 
@@ -88,4 +93,5 @@ listFields = n:Name _ ':' _ t:Type &(_ '}') { return [[n,t]];}
 
 _ "whitespace"
   = [ \t\n\r]*
-Name = n:([a-zA-Z_$][a-zA-Z0-9_$]*) { return new Name(n[0]) }
+Name = n:([a-zA-Z_$][a-zA-Z0-9_$]*) { return new Name(n[0]+n[1].join('')) }
+Number = n:([1-9][0-9]*) { return Number(n[0]+n[1].join('')); }

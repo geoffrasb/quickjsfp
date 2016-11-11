@@ -350,15 +350,17 @@ function Constructor(name, type){
   this.type = type;
   this.arity = countArity(type);
 }
-function Data(name,type,cnstrs){
+function Data(name,params,type,cnstrs){
   checkType(name, Name, 'name', 'Data');
+  checkArrayType(params, ParamType, 'params', 'Data');
   checkType(type, Type, 'type', 'Data');
   checkArrayType(cnstrs, Constructor, 'cnstrs', 'Data');
 
   this.name = name;
+  this.params = params;
   this.type = type;
   this.constructors = cnstrs;
-  this.arity = countArity(type);
+  this.arity = countArity(type)+params.length;
 }
 
 
@@ -370,15 +372,17 @@ function Observer(name,type){
   this.name = name;
   this.type = type;
 }
-function Codata(name,type,observers){
+function Codata(name,params,type,observers){
   checkType(name, Name, 'name', 'Codata');
+  checkArrayType(params, ParamType, 'params', 'Codata');
   checkType(type, Type, 'type', 'Codata');
   checkArrayType(observers, Observer, 'observers', 'Codata');
 
   this.name = name;
+  this.params = params;
   this.type = type;
   this.observers = observers;
-  this.arity = countArity(type);
+  this.arity = countArity(type) + params.length;
 }
 
 //------- Q.J.F. API
