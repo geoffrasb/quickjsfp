@@ -102,9 +102,9 @@ function RealType(introform){
   this.introform = introform;
 }
 
-function TypeVar(varname){
-  checkType(varname,Name,'varname','TypeVar');
-  this.varname = varname;
+function NameType(name){
+  checkType(varname,Name,'name','NameType');
+  this.name = name;
 }
 
 function Type(t){
@@ -117,7 +117,7 @@ function Type(t){
     case RecordType:
     case ListType:
     case RealType:
-    case TypeVar:
+    case NameType:
     case DontCare:
       this.type = t;
     default:
@@ -309,7 +309,7 @@ function countArity(type){
       case RecordType:
       case ListType:
       case RealType:
-      case TypeVar:
+      case NameType:
         return count+1;
       default:
         throw 'error in rec of countArity'
