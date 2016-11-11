@@ -103,7 +103,7 @@ function RealType(introform){
 }
 
 function NameType(name){
-  checkType(varname,Name,'name','NameType');
+  checkType(name,Name,'name','NameType');
   this.name = name;
 }
 
