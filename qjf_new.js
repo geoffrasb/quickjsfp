@@ -37,7 +37,7 @@ function Name(n){
   if(nameReg.test(n))
     this.text = n;
   else
-    throw 'error: Name: wrong format'
+    throw 'error: Name: wrong format, given:'+n;
 }
 function lName(n){
   checkType(n,String,'n','lName');
@@ -286,17 +286,11 @@ function FieldVal(type,val){
   this.type = type;
   this.val = val;
 }
-function RecParam(name,type){
-  checkType(name, Name, 'name', 'RecParam');
-  checkType(type, Type, 'type', 'RecParam');
 
-  this.name = name;
-  this.type = type;
-}
 
-function Record(name,parameters,type,fields,cnstr){
+function Record(name,parameters,type,fields,hasCnstr,cnstr){
   checkType(name,Name,'name','Record');
-  checkArrayType(parameters, RecParam, 'parameters', 'Record');
+  checkArrayType(parameters, ParamType, 'parameters', 'Record');
   checkType(type, [NoType, Type], 'type', 'Record');
 
   //fields : [keytype]
@@ -305,35 +299,55 @@ function Record(name,parameters,type,fields,cnstr){
     checkType(fields[i][0], Name, 'fields['+i+'][0]', 'Record');
     checkType(fields[i][1], Type, 'fields['+i+'][1]', 'Record');
   }
-  checkType(cnstr, Name, 'cnstr', 'Record');
+  checkType(hasCnstr, Boolean, 'hasCnstr', 'Record');
+  if(hasCnstr)
+    checkType(cnstr, Name, 'cnstr', 'Record');
 
 
   this.recordname = name;
-  this.parameters = parameters;   //Array of RecParam
+  this.parameters = parameters;   //Array of ParamType
   this.type = type;
   this.arity = parameters.length;
   this.fields = fields;
+  this.hasRecConstructor = hasCnstr;
 
   //making record constructor information
-  var fieldtypes = [];
-  for(var i=0;i<fields.length;i++){
-    fildtypes.push(fields[i][1]);
-  }
-  if(parameters.length<2)
-    fieldtypes.push(new Type(name));
-  else{
-    var paramNameTexts = [];
-    for(var i=0;i<parameters.length;i++){
-      paramNames.push(parameters[i].name.text);
+  if(hasCnstr){
+    // fields' types as the constructor's input
+    var fieldtypes = [];
+    for(var i=0;i<fields.length;i++){
+      fildtypes.push(fields[i][1]);
     }
-    fieldtypes.push(new Type(new ComposeType(name, paramNames)));
+
+    //deciding the output type of the constructor
+    if(parameters.length<1){
+      //If there's no parameter, then simply the recordname 
+      //  will be the return type of the constructor.
+      fieldtypes.push(new Type(name));
+
+    }else{
+      //Collect all the names of parameters;
+      // if any parameter is implicit, it's appearance will add a pair of curly braces.
+      // for example: (a : A) {b : B}
+      //  will become: ['a', '{b}']
+      var paramNameTexts = [];
+      for(var i=0;i<parameters.length;i++){
+        if(parameters[i].implicit)
+          paramNames.push('{'+parameters[i].name.text+'}');
+        else
+          paramNames.push(parameters[i].name.text);
+      }
+      fieldtypes.push(new Type(new ComposeType(name, paramNames)));
+    }
+    this.recConstrcutor = new Constructor(cnstr, listType2Arrow(fieldtypes));
+  }else{
+    this.recConstrcutor = null;
   }
-  this.recordConstrcutor = new Constructor(cnstr, listType2Arrow(fieldtypes));
 }
 //module
 function Module(name, parameters, fields){
   checkType(name, Name, 'name', 'Module');
-  checkArrayType(parameters, RecParam, 'parameters', 'Module');
+  checkArrayType(parameters, ParamType, 'parameters', 'Module');
   
   //fields : {k1 : FieldVal, k2 ...}
   checkType(fields, Object, 'fields', 'Record');
