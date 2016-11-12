@@ -379,6 +379,7 @@ function countArity(type){
         return t.type.implicit ? count : count+1;
       case SubType:
       case SupType:
+      case DontCare:
       case Tuple:
       case RecordType:
       case ListType:
@@ -412,7 +413,7 @@ function Data(name,params,type,cnstrs){
 //codata
 function Observer(name,type){
   checkType(name, Name, 'name', 'Observer');
-  checkType(type.type, [Type, NoType], 'type', 'Observer');
+  checkType(type, [Type, NoType], 'type', 'Observer');
 
   this.name = name;
   this.type = type;
