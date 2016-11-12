@@ -59,10 +59,10 @@ function Tuple(n,items){
   this.items = items;
 }
 
-function List(items){
-  checkType(items,Array,'items','List(internal)');
-  this.items = items;
-}
+// function List(items){
+//   checkType(items,Array,'items','List(internal)');
+//   this.items = items;
+// }
 
 //----type
 
@@ -223,6 +223,8 @@ function IPattern(inp){
                  , Array, IPattern, RecordPattern
                  , ConsPattern, NilPattern]
             , 'inp', 'IPattern');
+  if(inp.constructor === Array)
+    checkArrayType(inp, IPattern, 'inp', 'IPattern');
 
 
   this.ipattern = inp;
