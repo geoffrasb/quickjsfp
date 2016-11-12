@@ -181,6 +181,7 @@ function listType2Arrow(ts){
 //------- patterns
 
 function IntroForm(cnstr, patterns){
+  checkType(cnstr, Name, 'cnstr', 'IntroForm');
   checkType(patterns,Array,'patterns','IntroForm');
   //[IPattern]
 
@@ -188,13 +189,23 @@ function IntroForm(cnstr, patterns){
   this.patterns = patterns;
 }
 function RecordPattern(leadvar, restvar, keyvals){
-  checkType(leadvar,String,'leadvar','RecordPattern');
-  checkType(restvar,String,'restvar','RecordPattern');
+  checkType(leadvar,Array,'leadvar','RecordPattern');
+  if(leadvar.length>=1) //length==0: no leadvar
+    checkType(leadvar[0], Name, 'leadvar[0]', 'RecordPattern');
+  checkType(restvar,Array,'restvar','RecordPattern');
+  if(restvar.length>=1) //length==0: no restvar
+    checkType(restvar[0], Name, 'restvar[0]', 'RecordPattern');
   checkType(keyvals,Array,'keyvals','RecordPattern');
-  //[['k1',IPattern], ['k1',IPattern]]
+  //[[name,IPattern]]
+  for(var i=0;i<keyvals.length;i++){
+    checkType(keyvals[i],Name,'keyvals['+i+']', 'RecordPattern');
+  }
 
-  this.leadvar = leadvar; //"" for case of no leadvar
-  this.restvar = restvar; //"" for case of no restvar
+
+  this.hasLeadvar = leadvar.length>=1;
+  this.hasRestvar = restvar.length>=1;
+  this.leadvar = this.hasLeadvar ? leadvar[0] : "";
+  this.restvar = this.hasRestvar ? restvar[0] : ""; //"" for case of no restvar
   this.keyvals = keyvals;
 }
 function ConsPattern(x,xs){
@@ -205,6 +216,7 @@ function ConsPattern(x,xs){
   this.tail = xs;
 }
 function NilPattern(){}
+var insNilPattern = new NilPattern();
 
 function IPattern(inp){
   checkType(inp, [ DontCare, Name, IntroForm, Tuple
@@ -231,15 +243,7 @@ function IPattern(inp){
 
 function CPattern(observer, patterns){
   checkType(observer, [DontCare, Name], 'observer', 'CPattern');
-  // if(observer.constructor !== DontCare
-  //   && observer.constructor !== Name)
-  //   throw "cpattern error"
-
-  //patterns : [IPattern]
-  checkType(patterns,Array,'patterns','CPattern');
-  for(var i=0;i<patterns.length;i++){
-    checkType(patterns[i], IPattern, 'patterns['+i+']', 'CPattern');
-  }
+  checkArrayType(patterns,IPattern,'patterns','CPattern');
 
   this.observer = observer;
   this.patterns = patterns;
@@ -251,14 +255,6 @@ function WholePattern(inp){
     checkArrayType(inp, IPattern, 'inp', 'WholePattern');
   }
   this.wholepattern = inp;
-  // switch(inp.constructor){
-  //   case Array:
-  //   case CPattern:
-  //     this.wholepattern = inp;
-  //     break;
-  //   default:
-  //     throw "error at WholePattern"
-  // }
 }
 
 
