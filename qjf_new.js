@@ -194,7 +194,7 @@ function RecordPattern(leadvar, restvar, keypats){
     checkType(leadvar[0], Name, 'leadvar[0]', 'RecordPattern');
   checkType(restvar,Array,'restvar','RecordPattern');
   if(restvar.length>=1) //length==0: no restvar
-    checkType(restvar[0], Name, 'restvar[0]', 'RecordPattern');
+    checkType(restvar[0], [Name,DontCare], 'restvar[0]', 'RecordPattern');
   checkType(keypats,Array,'keypats','RecordPattern');
   //[[name,IPattern]]
   for(var i=0;i<keypats.length;i++){
