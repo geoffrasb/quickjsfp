@@ -180,9 +180,9 @@ function listType2Arrow(ts){
 
 //------- patterns
 
-function IntroForm(cnstr, patterns){
-  checkType(cnstr, Name, 'cnstr', 'IntroForm');
-  checkType(patterns,Array,'patterns','IntroForm');
+function IntroFormPattern(cnstr, patterns){
+  checkType(cnstr, Name, 'cnstr', 'IntroFormPattern');
+  checkType(patterns,Array,'patterns','IntroFormPattern');
   //[IPattern]
 
   this.cnstr = cnstr;
@@ -219,26 +219,13 @@ function NilPattern(){}
 var insNilPattern = new NilPattern();
 
 function IPattern(inp){
-  checkType(inp, [ DontCare, Name, IntroForm, Tuple
+  checkType(inp, [ DontCare, Name, IntroFormPattern, Tuple
                  , List, IPattern, RecordPattern
                  , ConsPattern, NilPattern]
             , 'inp', 'IPattern');
+
+  
   this.ipattern = inp;
-  // switch(inp.constructor){
-  //   case DontCare:
-  //   case Name:
-  //   case IntroForm:
-  //   case Tuple:
-  //   case List:
-  //   case IPattern:
-  //   case RecordPattern:
-  //   case ConsPattern:
-  //   case NilPattern:
-  //     this.ipattern = inp;
-  //     break;
-  //   default:
-  //     throw "error at IPattern"
-  // }
 }
 
 function CPattern(observer, patterns){
