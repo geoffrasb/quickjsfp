@@ -1,11 +1,11 @@
 # PEG.js grammar
 
- 
+
 
 DataDecl = l:DataLeft _  '=' _ r:DataRight {return new Data(l[0],l[1],l[2],r);}
 DataLeft = n:Name _ ps:DataParams _ ':' _ t:Type _ {return [n,ps,t];}
 DataParams =  &(_ '=') {return []}
-      / p:Param _ ps:DataPrams {
+      / p:Param _ ps:DataParams {
                 ps.unshift(p);
                 return ps;
               }
@@ -44,7 +44,7 @@ Type_ = st:SingType _ '->' _ t:Type_ {return new Type(new ArrowType(st,t));}
     / st:SingType {return st;}
 
 TypeParams = p:Param &(_ '->')   { return p }
-     / p:Param _ ps:Params { return new Type(new ArrowType(p,ps)) }
+     / p:Param _ ps:TypeParams { return new Type(new ArrowType(p,ps)) }
  
 Param = '(' _ n:Name _ ':' _ t:Type ')' { 
        return new Type(new ParamType(false,n,t))
@@ -65,17 +65,34 @@ SingType = p:Param     { return p; }
          / r:RecordTypeDecl   {return r;}
          / '[' _ t:Type _ ']' {return new Type(new ListType(t));}
          / '_'     { return new Type(insDontCare); }
-         / c:Name _ args:SpaceNames {
+         / c:Name [ \t\n\r]+ args:SpaceVals {
              args.unshift(c);
              return new Type(new ComposeType(args));
            }
          / n:Name  { return new Type(new NameType(n)); }
 
-SpaceNames = n:Name !(_ Name)    {return [n];}
-      / n:Name _ ns:SpaceNames {
-                ns.unshift(n);
-                return ns;
-              }
+SpaceVals = ((!.) / (&[)\]}\-])) {return []}
+      / s:LongString !. {return [s]}
+          / s:LongString [ \t\n\r]+ ss:SpaceVals {
+              ss.unshift(s);
+              return ss;
+            }
+LongString = ((!.) / (&[ )\]}\-])) {return ""}
+           / s:[^(\[{ )\]}]+ (!. / &[ )\]}\-]) {return s.join('')}
+           / s:[^(\[{]* m:FaceLeftPar rp:[)\]}] b:LongString {return s.join('')+m+rp+b}
+           
+FaceLeftPar = '(' r:SVinP  {return '('+r;}
+      / '[' r:SVinSqP {return '['+r;}
+            / cb:'{' r:SVinCB {return cb+r;}
+SVinP = any:[^)(]* &[(\[{] i:FaceLeftPar ')' b:SVinP
+      {return any.join('')+i+')'+b}
+      / any:[^)(]* &')'{return any.join('')}
+SVinSqP = any:[^\]\[]* &[(\[{] i:FaceLeftPar ']' b:SVinSqP
+      {return any.join('')+i+']'+b}
+      / any:[^\]\[]* &')'{return any.join('')}
+SVinCB = any:[^}{]* &[(\[{] i:FaceLeftPar rcb:'}' b:SVinCB 
+      {return any.join('')+i+rcb+b}
+      / any:[^}{]* &')'{return any.join('')}
 
 TypeTuple = t:Type &(_ ')') { return [t]; }
       / t:Type _ ',' _ ts:TypeTuple {
