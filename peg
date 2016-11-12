@@ -3,6 +3,15 @@
 
 
 
+
+CodataDecl = n:Name _ ps:RecParams _ ':' _ t:Type _ '=' _ r:RecordTypeDecl{
+      var obsvs = [];
+            for(var i=0;i<r.type.keytypes.length;i++){
+              obsvs.push(new Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
+            }
+      return new Codata(n,ps,t,obsvs);
+      }
+
 RecordDecl = n:Name _ ps:RecParams _ ':' _ t:Type _ '=' _ cnstr:Name? _ r:RecordTypeDecl {
          if(cnstr===null){
                  return new Record(n,ps,t,r.type.keytypes,false);
@@ -96,10 +105,10 @@ SpaceVals = s:LongString &(_ ((!.) / ImpossibleLeadings)) {return [s]}
               ss.unshift(s);
               return ss;
             }
-LongString = (&PossibleLeadings) s:[^(\[{ \t\n\r]+ ls:LongString_ {
+LongString = (&PossibleLeadings) s:[^\=(\[{ \t\n\r)\]}\-:,]+ ls:LongString_ {
         var res = s.join('')+ls;
         return res;}
-LongString_ = (!. / &[ \t\n\r]) {return ""}
+LongString_ = (!. / &[= \t\n\r)\]}\-:,]) {return ""}
       / (&[(\[{] m:FaceLeftPar rp:[)\]}]) ls:LongString {return m+rp+ls}
            
 FaceLeftPar = '(' r:SVinP  {return '('+r;}
@@ -133,5 +142,5 @@ _ "whitespace"
   = [ \t\n\r]*
 Name = n:([a-zA-Z_$][a-zA-Z0-9_$]*) { return new Name(n[0]+n[1].join('')) }
 Number = n:([0-9]+) { return Number(n.join('')); }
-PossibleLeadings = [^\=`~!@#%^&*-+,.<>/?|\\)}\]:;]
-ImpossibleLeadings = [\=`~!@#%^&*-\=+,.<>/?|\\)}\]:;]
+PossibleLeadings = [^\=`~!@#%^&*\-+,.<>/?|\\)}\]:;]
+ImpossibleLeadings = [\=`~!@#%^&*\-+,.<>/?|\\)}\]:;]
