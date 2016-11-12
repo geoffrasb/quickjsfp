@@ -221,7 +221,7 @@ var insNilPattern = new NilPattern();
 function IPattern(inp){
   checkType(inp, [ DontCare, Name, IntroFormPattern, Tuple
                  , Array, IPattern, RecordPattern
-                 , ConsPattern, NilPattern]
+                 , ConsPattern, NilPattern, Number, String]
             , 'inp', 'IPattern');
   if(inp.constructor === Array)
     checkArrayType(inp, IPattern, 'inp', 'IPattern');

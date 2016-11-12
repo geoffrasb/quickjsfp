@@ -4,14 +4,68 @@
 
 
 
-WholePattern = Patterns 
-       / CPattern
 
-Patterns = IPattern _ Patterns_
-Patterns_ = (!. / &ImpossibleLeadings)
-     / IPattern _ Patterns_
+WholePattern = ps:Patterns {return new WholePattern(ps)}
+       / cp:CPattern {return new WholePattern(cp)}
 
-IPattern
+Patterns = p:IPattern _ ps:Patterns_ {ps.unshift(p); return ps}
+Patterns_ = (!. / &ImpossibleLeadings) {return []}
+     / p:IPattern _ ps:Patterns_ {ps.unshift(p); return ps}
+
+IPattern = n:Number  {return new IPattern(n)}
+     / s:ParseString {return new IPattern(s)}
+     / c:Name _ (!('@'/'*')) ps:IPattern_1 {
+        if(ps.length == 0){
+                return c.text=='_' ? new IPattern(insDontCare) : new IPattern(c);
+              }else{
+                return new IPattern(new IntroFormPattern(c, ps));
+              }
+      }
+         / '(' _ p:IPattern _ ',' _ ps:CommaPatterns ')' {
+            ps.unshift(p);
+            return new IPattern(new Tuple(ps.length,ps))
+            }
+     / '(' _ ph:IPattern _ ':' _ ps:ColonPatterns _ ')' {
+              var pt = ps[ps.length-1];
+                for(var i=ps.length-2; i>=0; i--){
+                  pt = new IPattern(new ConsPattern(ps[i], pt));
+                }
+              return new IPattern(new ConsPattern(ph,pt))
+            }
+         / '(' _ p:IPattern _ ')' {return p}
+         / '[]' {return new IPattern(insNilPattern)}
+         / '[' _ ps:CommaPatterns _ ']' {return new IPattern(ps)}
+         / ln:(Name _ '@' _)? '{' _ rn:(r:Name _ '|')? _ r:RecPattern _ '}' {
+             return new IPattern(
+               new RecordPattern( ln==null? [] : [ln[0]]
+                , rn==null? [] : [rn[0].text=='_'?insDontCare:rn[0]]
+                , r));
+           }
+         
+IPattern_1 =  (!. / &ImpossibleLeadings) {return []}
+      / [ \t\n\r]+ ps:Patterns {return ps}
+
+ColonPatterns = p:IPattern _ ps:ColonPatterns_ {ps.unshift(p);return ps}
+ColonPatterns_ = ':' ps:ColonPatterns {return ps}
+        / &')' {return []}
+
+CommaPatterns = p:IPattern _ ps:CommaPatterns_ {ps.unshift(p); return ps}
+CommaPatterns_ = ',' _ ps:CommaPatterns {return ps}
+       / &[)\]] {return []}
+
+
+RecPattern = k:Name _ '=' _ p:IPattern _ rps:RecPattern_ {
+        rps.unshift([k,p]);
+              return rps;
+            }
+RecPattern_ = &'}' {return []}
+      / ',' _ rps:RecPattern {return rps}
+
+CPattern = o:Name _ '*' {
+      return new CPattern(o.text=='_'? insDontCare : o ,[])}
+     / o:Name _ '(' _ '*' _ ps:Patterns _ ')' {
+             return new CPattern(o.text=='_'? insDontCare : o , ps)
+           }
 
 
 CodataDecl = n:Name _ ps:RecParams _ ':' _ t:Type _ '=' _ r:RecordTypeDecl{
@@ -158,3 +212,5 @@ Name = n:([a-zA-Z_$][a-zA-Z0-9_$]*) { return new Name(n[0]+n[1].join('')) }
 Number = n:([0-9]+) { return Number(n.join('')); }
 PossibleLeadings = [^\=`~!@#%^&*\-+,.<>/?|\\)}\]:;]
 ImpossibleLeadings = [\=`~!@#%^&*\-+,.<>/?|\\)}\]:;]
+ParseString = '\"' s:[^"]* '\"' {return s.join('')}
+      / '\'' s:[^']* '\'' {return s.join('')}
