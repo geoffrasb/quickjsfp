@@ -111,10 +111,6 @@ function ComposeType(f,args){ //args will stay as unevaluated javascript string
   this.args = args;
 }
 
-function NameType(name){
-  checkType(name,Name,'name','NameType');
-  this.name = name;
-}
 
 function Type(t){
   switch(t.constructor){
@@ -126,7 +122,7 @@ function Type(t){
     case RecordType:
     case ListType:
     case ComposeType:
-    case NameType:
+    case Name:
     case DontCare:
       this.type = t;
       break;
@@ -324,7 +320,7 @@ function Record(name,parameters,type,fields,cnstr){
     fildtypes.push(fields[i][1]);
   }
   if(parameters.length<2)
-    fieldtypes.push(new Type(new NameType(name)));
+    fieldtypes.push(new Type(name));
   else{
     var paramNameTexts = [];
     for(var i=0;i<parameters.length;i++){
@@ -373,7 +369,7 @@ function countArity(type){
       case RecordType:
       case ListType:
       case ComposeType:
-      case NameType:
+      case Name:
         return count+1;
       default:
         throw 'error in rec of countArity'
