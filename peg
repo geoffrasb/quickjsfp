@@ -4,6 +4,16 @@
 
 
 
+WholePattern = Patterns 
+       / CPattern
+
+Patterns = IPattern _ Patterns_
+Patterns_ = (!. / &ImpossibleLeadings)
+     / IPattern _ Patterns_
+
+IPattern
+
+
 CodataDecl = n:Name _ ps:RecParams _ ':' _ t:Type _ '=' _ r:RecordTypeDecl{
       var obsvs = [];
             for(var i=0;i<r.type.keytypes.length;i++){
@@ -94,11 +104,15 @@ SingType = p:Param     { return p; }
          / '(' _ t:Type _ ')' {return t;}
          / r:RecordTypeDecl   {return r;}
          / '[' _ t:Type _ ']' {return new Type(new ListType(t));}
-         / '_'     { return new Type(insDontCare); }
          / c:Name [ \t\n\r]+ args:SpaceVals {
              return new Type(new ComposeType(c,args));
            }
-         / n:Name  { return new Type(n); }
+         / n:Name  { 
+          if(n.text == '_'){
+              return new Type(insDontCare);
+            }else{
+            return new Type(n); 
+            }}
 
 SpaceVals = s:LongString &(_ ((!.) / ImpossibleLeadings)) {return [s]}
           / s:LongString [ \t\n\r]+ ss:SpaceVals {
