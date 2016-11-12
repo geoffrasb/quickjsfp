@@ -188,17 +188,17 @@ function IntroFormPattern(cnstr, patterns){
   this.cnstr = cnstr;
   this.patterns = patterns;
 }
-function RecordPattern(leadvar, restvar, keyvals){
+function RecordPattern(leadvar, restvar, keypats){
   checkType(leadvar,Array,'leadvar','RecordPattern');
   if(leadvar.length>=1) //length==0: no leadvar
     checkType(leadvar[0], Name, 'leadvar[0]', 'RecordPattern');
   checkType(restvar,Array,'restvar','RecordPattern');
   if(restvar.length>=1) //length==0: no restvar
     checkType(restvar[0], Name, 'restvar[0]', 'RecordPattern');
-  checkType(keyvals,Array,'keyvals','RecordPattern');
+  checkType(keypats,Array,'keypats','RecordPattern');
   //[[name,IPattern]]
-  for(var i=0;i<keyvals.length;i++){
-    checkType(keyvals[i],Name,'keyvals['+i+']', 'RecordPattern');
+  for(var i=0;i<keypats.length;i++){
+    checkType(keypats[i][0],Name,'keypats['+i+'][0]', 'RecordPattern');
   }
 
 
@@ -206,7 +206,7 @@ function RecordPattern(leadvar, restvar, keyvals){
   this.hasRestvar = restvar.length>=1;
   this.leadvar = this.hasLeadvar ? leadvar[0] : "";
   this.restvar = this.hasRestvar ? restvar[0] : ""; //"" for case of no restvar
-  this.keyvals = keyvals;
+  this.keypats = keypats;
 }
 function ConsPattern(x,xs){
   //x : IPattern
