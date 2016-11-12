@@ -313,11 +313,26 @@ function Record(name,parameters,type,fields,cnstr){
 
 
   this.recordname = name;
-  this.parameters = parameters;
+  this.parameters = parameters;   //Array of RecParam
   this.type = type;
   this.arity = parameters.length;
   this.fields = fields;
-  //this.recordConstrcutor = new Constructor(cnstr, );
+
+  //making record constructor information
+  var fieldtypes = [];
+  for(var i=0;i<fields.length;i++){
+    fildtypes.push(fields[i][1]);
+  }
+  if(parameters.length<2)
+    fieldtypes.push(new Type(new NameType(name)));
+  else{
+    var paramNameTexts = [];
+    for(var i=0;i<parameters.length;i++){
+      paramNames.push(parameters[i].name.text);
+    }
+    fieldtypes.push(new Type(new ComposeType(name, paramNames)));
+  }
+  this.recordConstrcutor = new Constructor(cnstr, listType2Arrow(fieldtypes));
 }
 //module
 function Module(name, parameters, fields){
