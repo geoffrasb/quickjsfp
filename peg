@@ -2,6 +2,26 @@
 
 
 
+
+RecordDecl = n:Name _ ps:RecParams _ ':' _ t:Type _ '=' _ cnstr:Name? _ r:RecordTypeDecl {
+         if(cnstr===null){
+                 return new Record(n,ps,t,r.type.keytypes,false);
+               }else{
+                 return new Record(n,ps,t,r.type.keytypes,true,cnstr)
+               }      
+             }
+             
+RecParams = &':' {return []}
+      / n:Name _ ps:RecParams {
+              var x = new ParamType(false,n,new Type(insDontCare));
+              ps.unshift(x);
+              return ps;
+            }
+          / p:Param _ ps:RecParams {
+             ps.unshift(p.type)
+             return ps;
+            }
+
 DataDecl = l:DataLeft _  '=' _ r:DataRight {return new Data(l[0],l[1],l[2],r);}
 DataLeft = n:Name _ ps:DataParams _ ':' _ t:Type _ {return [n,ps,t];}
 DataParams =  &(_ '=') {return []}
@@ -29,7 +49,9 @@ ModParams = !.            {return [];}
              return ts;
             }
 
-Type = ps:TypeParams _ '->' _ t:Type_ {
+Type = st:SingType _ !'->' {return st;}
+   / st:SingType _ '->' _ t:Type_ {return new Type(new ArrowType(st,t))}
+   / ps:TypeParams _ '->' _ t:Type_ {
     if(ps.type.constructor === ArrowType){
       var last = lastArrowOfChain(ps.type);
       last.righttype = new Type(new ArrowType(last.righttype, t));
@@ -37,11 +59,10 @@ Type = ps:TypeParams _ '->' _ t:Type_ {
         }else{
           return new Type(new ArrowType(ps,t));
         }}
-     / t:Type_     {return t;}
-   / st:SingType {return st;}
+ 
 
-Type_ = st:SingType _ '->' _ t:Type_ {return new Type(new ArrowType(st,t));}
-    / st:SingType {return st;}
+Type_ = st:SingType _ !'->' {return st;}
+    / st:SingType _ '->' _ t:Type_ {return new Type(new ArrowType(st,t));}
 
 TypeParams = p:Param &(_ '->')   { return p }
      / p:Param _ ps:TypeParams { return new Type(new ArrowType(p,ps)) }
@@ -68,17 +89,18 @@ SingType = p:Param     { return p; }
          / c:Name [ \t\n\r]+ args:SpaceVals {
              return new Type(new ComposeType(c,args));
            }
-         / n:Name  { return new Type(new NameType(n)); }
+         / n:Name  { return new Type(n); }
 
-SpaceVals = ((!.) / (&[)\]}\-])) {return []}
-      / s:LongString !. {return [s]}
+SpaceVals = s:LongString &(_ ((!.) / ImpossibleLeadings)) {return [s]}
           / s:LongString [ \t\n\r]+ ss:SpaceVals {
               ss.unshift(s);
               return ss;
             }
-LongString = ((!.) / (&[ )\]}\-])) {return ""}
-           / s:[^(\[{ )\]}]+ (!. / &[ )\]}\-]) {return s.join('')}
-           / s:[^(\[{]* m:FaceLeftPar rp:[)\]}] b:LongString {return s.join('')+m+rp+b}
+LongString = (&PossibleLeadings) s:[^(\[{ \t\n\r]+ ls:LongString_ {
+        var res = s.join('')+ls;
+        return res;}
+LongString_ = (!. / &[ \t\n\r]) {return ""}
+      / (&[(\[{] m:FaceLeftPar rp:[)\]}]) ls:LongString {return m+rp+ls}
            
 FaceLeftPar = '(' r:SVinP  {return '('+r;}
       / '[' r:SVinSqP {return '['+r;}
@@ -101,7 +123,7 @@ TypeTuple = t:Type &(_ ')') { return [t]; }
  
 RecordTypeDecl = '{' _ lf:listFields _ '}'  { return new Type(new RecordType(lf))}
 listFields = n:Name _ ':' _ t:Type &(_ '}') { return [[n,t]];}
-       / ',' _ n:Name _ ':' _ t:Type _ lf:listFields {
+       / _ n:Name _ ':' _ t:Type _ ',' _ lf:listFields {
               lf.unshift([n,t]);
                 return lf;
              }
@@ -110,4 +132,6 @@ listFields = n:Name _ ':' _ t:Type &(_ '}') { return [[n,t]];}
 _ "whitespace"
   = [ \t\n\r]*
 Name = n:([a-zA-Z_$][a-zA-Z0-9_$]*) { return new Name(n[0]+n[1].join('')) }
-Number = n:([1-9][0-9]*) { return Number(n[0]+n[1].join('')); }
+Number = n:([0-9]+) { return Number(n.join('')); }
+PossibleLeadings = [^\=`~!@#%^&*-+,.<>/?|\\)}\]:;]
+ImpossibleLeadings = [\=`~!@#%^&*-\=+,.<>/?|\\)}\]:;]
