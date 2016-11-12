@@ -138,8 +138,7 @@ function Type(t){
 function NoType(){}
 
 
-// type parsing
-
+//--------type manipulation utilities
 
 function lastArrowOfChain(t){
   checkType(t, ArrowType, 't', 'lastArrowOfChain');
@@ -152,7 +151,20 @@ function lastArrowOfChain(t){
   }
 }
 
+function listType2Arrow(ts){
+  checkArrayType(ts, Type, 'ts', 'listType2Arrow');
+  if(ts.length<1)
+    throw "error in listType2Arrow: ts.length<1"
 
+  var res = ts[ts.length-1];
+  for(var i=ts.length-2; i>=0; i--){
+    res = new Type(new ArrowType(ts[i], res));
+  }
+  return res;
+}
+
+
+// type parsing
 
 
 
@@ -305,7 +317,7 @@ function Record(name,parameters,type,fields,cnstr){
   this.type = type;
   this.arity = parameters.length;
   this.fields = fields;
-  this.recordConstrcutor = new Constructor(cnstr, );
+  //this.recordConstrcutor = new Constructor(cnstr, );
 }
 //module
 function Module(name, parameters, fields){
