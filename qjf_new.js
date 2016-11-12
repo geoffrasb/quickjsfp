@@ -253,7 +253,23 @@ function WholePattern(inp){
   // }
 }
 
+
+
+
+
+
+
+
 //------- declarations
+
+function Constructor(name, type){
+  checkType(name, Name, 'name', 'Constructor');
+  checkType(type, Type, 'type', 'Constructor');
+  this.name = name;
+  this.type = type;
+  this.arity = countArity(type);
+}
+
 
 //record
 function FieldVal(type,val){
@@ -270,29 +286,26 @@ function RecParam(name,type){
   this.type = type;
 }
 
-function Record(name,parameters,type,fields){
+function Record(name,parameters,type,fields,cnstr){
   checkType(name,Name,'name','Record');
   checkArrayType(parameters, RecParam, 'parameters', 'Record');
-  // checkType(parameters, Array, 'parameters','Record');
-  // for(var i=0;i<parameters.length;i++){
-  //   checkType(parameters[i], RecParam, 'parameters['+i+']', 'Record');
-  // }
   checkType(type, [NoType, Type], 'type', 'Record');
-  // if(  type.constructor !== NoType
-  //   && type.constructor !== Type )
-  //   throw "error 1 in Record"
 
-  //fields : {k1 : FieldVal, k2 ...}
-  checkType(fields, Object, 'fields', 'Record');
-  for(var k in fields){
-    checkType(fields[k], FieldVal, 'fields['+k+']', 'Record');
+  //fields : [keytype]
+  checkArrayType(fields, Array, 'fields', 'Record');
+  for(var i=0;i<fields.length;i++){
+    checkType(fields[i][0], Name, 'fields['+i+'][0]', 'Record');
+    checkType(fields[i][1], Type, 'fields['+i+'][1]', 'Record');
   }
+  checkType(cnstr, Name, 'cnstr', 'Record');
+
 
   this.recordname = name;
   this.parameters = parameters;
   this.type = type;
   this.arity = parameters.length;
   this.fields = fields;
+  this.recordConstrcutor = new Constructor(cnstr, );
 }
 //module
 function Module(name, parameters, fields){
@@ -344,13 +357,7 @@ function countArity(type){
 }
 
 //data
-function Constructor(name, type){
-  checkType(name, Name, 'name', 'Constructor');
-  checkType(type, Type, 'type', 'Constructor');
-  this.name = name;
-  this.type = type;
-  this.arity = countArity(type);
-}
+
 function Data(name,params,type,cnstrs){
   checkType(name, Name, 'name', 'Data');
   checkArrayType(params, ParamType, 'params', 'Data');
