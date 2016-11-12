@@ -220,11 +220,11 @@ var insNilPattern = new NilPattern();
 
 function IPattern(inp){
   checkType(inp, [ DontCare, Name, IntroFormPattern, Tuple
-                 , List, IPattern, RecordPattern
+                 , Array, IPattern, RecordPattern
                  , ConsPattern, NilPattern]
             , 'inp', 'IPattern');
 
-  
+
   this.ipattern = inp;
 }
 
