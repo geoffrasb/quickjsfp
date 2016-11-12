@@ -103,11 +103,12 @@ function ListType(t){
   this.listype = t;
 }
 
-function ComposeType(introform){
-  //introform : [Constructor, arg1, arg2...]
-  checkArrayType(introform, Name, 'introform', 'ComposeType');
+function ComposeType(f,args){ //args will stay as unevaluated javascript string
+  checkType(f, Name, 'f', 'ComposeType');
+  checkArrayType(args, String, 'args', 'ComposeType');
 
-  this.introform = introform;
+  this.f = f;
+  this.args = args;
 }
 
 function NameType(name){

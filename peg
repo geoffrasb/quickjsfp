@@ -66,8 +66,7 @@ SingType = p:Param     { return p; }
          / '[' _ t:Type _ ']' {return new Type(new ListType(t));}
          / '_'     { return new Type(insDontCare); }
          / c:Name [ \t\n\r]+ args:SpaceVals {
-             args.unshift(c);
-             return new Type(new ComposeType(args));
+             return new Type(new ComposeType(c,args));
            }
          / n:Name  { return new Type(new NameType(n)); }
 
