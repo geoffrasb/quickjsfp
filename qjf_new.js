@@ -1322,14 +1322,44 @@ allparsers = /*
 //------- Q.J.F. API
 // module,exporting,record,open,data,codata,func,REC,cases; literal expression
 
-function module(decstr, body){
-  //body needs to be binded
-  var mod = allparsers.parse(decstr, {startRule : 'ModuleDecl'});
-  checkType(mod, Module, 'mod', 'module');
 
-  //evaluate body
+// Without type checking, `module` just return a normal javascript object,
+//  returned by `body`.
+// `module` will change the context of `body`
+function module(decstr, body){
+  var mod = allparsers.parse(decstr, {startRule : 'ModuleDecl'});
+  checkType(mod.name , Name, 'mod.name', 'module');
+  checkArrayType(mod.params, Type, 'mod.params', 'module');
+  checkType(body, Function, 'body', 'module');
+
+  if(mod.params.length != body.length)
+    throw 'error at module: declared numbers of parameter doesn\'t match to body\'s arity.'
+
+  //Evaluating body:
+  // If there's any parameter, returns a function that waits for it,
+  // otherwise just returns the evaluating result of the body.
+  // This is different from module system of agda.
+  if(params.length==0){
+    return body.call({});
+  }else{
+    return body.bind({});
+  }
 }
-function evModule(decstr, body){
+
+//self: the context of the evaluation, expected to be `this`
+function evModule(self,decstr, body){
+  var mod = allparsers.parse(decstr, {startRule : 'ModuleDecl'});
+  checkType(mod.name , Name, 'mod.name', 'module');
+  checkArrayType(mod.params, Type, 'mod.params', 'module');
+  checkType(body, Function, 'body', 'module');
+
+  if(mod.params.length != body.length)
+    throw 'error at module: declared numbers of parameter doesn\'t match to body\'s arity.'
+
+  var resmod = mod.params.length==0? body.call({}) : body.bind({});
+  var internalName = 'qjf$'+mod.name.text;
+  self[internalName] = resmod;
+  return 'var '+mod.name.text+' = this.'+internalName+';';
 }
 
 function record(decstr){
