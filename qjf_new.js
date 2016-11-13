@@ -61,6 +61,16 @@ function Tuple(n,items){
   this.items = items;
 }
 
+function genVars(n){
+  //!n>=0
+  var res = [];
+  for(var i=0;i<n;i++){
+    res.push("_"+i);
+  }
+  return res;
+}
+
+
 // function List(items){
 //   checkType(items,Array,'items','List(internal)');
 //   this.items = items;
@@ -1389,14 +1399,14 @@ function record(decstr){
   var cnstr = {};
   if(rec.hasRecConstructor){
     cnstr = { nametext : rec.recConstructor.name.text
-            , cnstrfunc: function(){
-                checkValue(arguments.length, allkeys.length, 'input length', rec.recConstructor.name.text);
-                var res = {};
-                for(var i=0;i<allkeys.length;i++){
-                  res[allkeys[i]] = arguments[i];
-                }
-                return res;
-              }
+            , cnstrfunc: eval("(function("+genVars(allkeys.length).join(',')+"){"
+                +"checkValue(arguments.length, allkeys.length, 'input length', rec.recConstructor.name.text);"
+                +"var res = {};"
+                +"for(var i=0;i<allkeys.length;i++){"
+                +"  res[allkeys[i]] = arguments[i];"
+                +"}"
+                +"return res;"
+              +"})")
             }
     cnstr.cnstrfunc.length = allkeys.length;
   }else{
@@ -1538,6 +1548,9 @@ function evOpen(mod,modname,str){
 
 //`data` will make its constructors available
 //the constructors should contain information that helps pattern matching
+
+var makeConstructor = function(){
+}
 
 function data(decstr){
   var parseddata = allparsers.parse(decstr, {startRule : 'DataDecl'});
