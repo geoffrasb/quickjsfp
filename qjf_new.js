@@ -398,9 +398,9 @@ function Data(name,params,type,cnstrs){
 
 
 //codata
-function Observer(name,type){
-  checkType(name, Name, 'name', 'Observer');
-  checkType(type, [Type, NoType], 'type', 'Observer');
+function qjf$Observer(name,type){
+  checkType(name, Name, 'name', 'qjf$Observer');
+  checkType(type, [Type, NoType], 'type', 'qjf$Observer');
 
   this.name = name;
   this.type = type;
@@ -409,7 +409,7 @@ function Codata(name,params,type,observers){
   checkType(name, Name, 'name', 'Codata');
   checkArrayType(params, ParamType, 'params', 'Codata');
   checkType(type, Type, 'type', 'Codata');
-  checkArrayType(observers, Observer, 'observers', 'Codata');
+  checkArrayType(observers, qjf$Observer, 'observers', 'Codata');
 
   this.name = name;
   this.params = params;
@@ -660,7 +660,7 @@ allparsers = /*
           function(n, ps, t, r) {
                 var obsvs = [];
                       for(var i=0;i<r.type.keytypes.length;i++){
-                        obsvs.push(new Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
+                        obsvs.push(new qjf$Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
                       }
                 return new Codata(n,ps,t,obsvs);
                 },
@@ -1530,13 +1530,26 @@ function evOpen(mod,modname,str){
 }
 
 
+
+
+
+
+
+
 //`data` will make its constructors available
 //the constructors should contain information that helps pattern matching
+
 function data(decstr){
   var parseddata = allparsers.parse(decstr, {startRule : 'DataDecl'});
 }
 function evData(decstr){
 }
+
+
+
+
+
+
 
 function codata(decstr){
   allparsers.parse(decstr, {startRule : 'CodataDecl'});
