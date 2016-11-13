@@ -301,7 +301,7 @@ function Record(name,parameters,type,fields,hasCnstr,cnstr){
     // fields' types as the constructor's input
     var fieldtypes = [];
     for(var i=0;i<fields.length;i++){
-      fildtypes.push(fields[i][1]);
+      fieldtypes.push(fields[i][1]);
     }
 
     //deciding the output type of the constructor
@@ -324,9 +324,9 @@ function Record(name,parameters,type,fields,hasCnstr,cnstr){
       }
       fieldtypes.push(new Type(new ComposeType(name, paramNames)));
     }
-    this.recConstrcutor = new Constructor(cnstr, listType2Arrow(fieldtypes));
+    this.recConstructor = new Constructor(cnstr, listType2Arrow(fieldtypes));
   }else{
-    this.recConstrcutor = null;
+    this.recConstructor = null;
   }
 }
 //module
@@ -1349,12 +1349,12 @@ function module(decstr, body){
 //self: the context of the evaluation, expected to be `this`
 function evModule(self,decstr, body){
   var mod = allparsers.parse(decstr, {startRule : 'ModuleDecl'});
-  checkType(mod.name , Name, 'mod.name', 'module');
-  checkArrayType(mod.params, Type, 'mod.params', 'module');
-  checkType(body, Function, 'body', 'module');
+  checkType(mod.name , Name, 'mod.name', 'evModule');
+  checkArrayType(mod.params, Type, 'mod.params', 'evModule');
+  checkType(body, Function, 'body', 'evModule');
 
   if(mod.params.length != body.length)
-    throw 'error at module: declared numbers of parameter doesn\'t match to body\'s arity.'
+    throw 'error at evModule: declared numbers of parameter doesn\'t match to body\'s arity.'
 
   var resmod = mod.params.length==0? body.call({}) : body.bind({});
   var internalName = 'qjf$'+mod.name.text;
@@ -1362,10 +1362,68 @@ function evModule(self,decstr, body){
   return 'var '+mod.name.text+' = this.'+internalName+';';
 }
 
+
+
+
+// How to make an instance of a record?
+// Either with the record constructor, or javascript objects with exact same fields.
+// There should be a way holding type informations but at this point it's not needed.
+// `record` will make the record constructor if it's declared, and getters, 
+//   all wrapping in an object.
 function record(decstr){
-  allparsers.parse(decstr, {startRule : 'RecordDecl'});
+  var rec = allparsers.parse(decstr, {startRule : 'RecordDecl'});
+  checkType(rec, Record, 'rec', 'record');
+
+  var allkeys = [];
+  for(var i=0;i<rec.fields.length;i++){
+    allkeys.push(rec.fields[i][0].text);
+  }
+
+
+  var cnstr = {};
+  if(rec.hasRecConstructor){
+    cnstr = { name : rec.recConstructor.name.text
+            , cnstrfunc: function(){
+                checkValue(arguments.length, allkeys.length, 'input length', rec.recConstructor.name.text);
+                var res = {};
+                for(var i=0;i<allkeys.length;i++){
+                  res[allkeys[i]] = arguments[i];
+                }
+                return res;
+              }
+            }
+    cnstr.cnstrfunc.length = allkeys.length;
+  }else{
+    cnstr = null;
+  }
+
+
+  var checkAllKeys = function(o){
+    for(var i=0;i<allkeys.length;i++){
+      if(typeof(o[allkeys[i]])=='undefined'){
+        console.log('Warning: you applied getter \''+allkeys[i]+'\' to a non-'+rec.recordname.text+' object.');
+      }
+    }
+  }
+
+  var getters = {};
+  for(var i=0;i<allkeys.length;i++){
+    getters[allkeys[i]] = (function(k){
+      return function(o){
+        checkAllKeys(o);
+        return o[k];
+      }
+    })(allkeys[i]);
+  }
+
+  return { recordname : rec.recordname
+         , cnstr      : cnstr
+         , getters    : getters
+         }
 }
-function evRecord(decstr){
+
+//self, expected given `this`
+function evRecord(self, decstr){
 }
 
 function evOpen(mod,str){
