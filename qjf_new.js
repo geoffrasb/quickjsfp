@@ -1338,7 +1338,7 @@ allparsers = /*
 //  returned by `body`.
 // `module` will change the context of `body`
 function module(decstr, body){
-  var mod = allparsers.parse(decstr, {startRule : 'ModuleDecl'});
+  var mod = allparsers.parse(decstr.trim(), {startRule : 'ModuleDecl'});
   checkType(mod.name , Name, 'mod.name', 'module');
   checkArrayType(mod.params, Type, 'mod.params', 'module');
   checkType(body, Function, 'body', 'module');
@@ -1386,7 +1386,7 @@ function evModule(self,decstr, body){
 // `record` will make the record constructor if it's declared, and getters, 
 //   all wrapping in an object.
 function record(decstr){
-  var rec = allparsers.parse(decstr, {startRule : 'RecordDecl'});
+  var rec = allparsers.parse(decstr.trim(), {startRule : 'RecordDecl'});
   checkType(rec, Record, 'rec', 'record');
 
   var allkeys = [];
@@ -1550,7 +1550,7 @@ function evOpen(mod,modname,str){
 
 
 function data(decstr){
-  var parseddata = allparsers.parse(decstr, {startRule : 'DataDecl'});
+  var parseddata = allparsers.parse(decstr.trim(), {startRule : 'DataDecl'});
 
   var cnstr_aritys = {} //{cnstrName:arity}
   for(var i=0;i<parseddata.constructors.length;i++){
@@ -1603,9 +1603,9 @@ function evData(self,decstr){
 
 
 
-
+//brings two objects in: coinductions that make codatas, observer functions
 function codata(decstr){
-  var parsedcodata = allparsers.parse(decstr, {startRule : 'CodataDecl'});
+  var parsedcodata = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
 }
 function evCodata(decstr){
 }
@@ -1622,7 +1622,28 @@ var Y = function(le) {
 
 var recHelper = {};
 
-function cases(data,args){
+function REC(args){
+}
+
+function cases(d,args){
+  if(arguments.length < 3)
+    throw "error in cases: not given enough arguments"
+
+  //patterns are in positions of x*2+1
+  //callbacks are in (x+1)*2
+  var x = 0;
+  var matched = false;
+  do{
+    checkType(arguments[x*2+1], String, 'arguments[1]', 'cases');
+    checkType(arguments[(x+1)*2], Function, 'arguments[2]', 'cases');
+
+    var pat = allparsers.parse(arguments[x*2+1].trim(), {startRule: 'WholePattern'})
+    if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1)
+
+    x += 1;
+  }while(matched);
+  if(!matched)
+    throw "error in cases: no pattern matches."
 }
 
 function func(type,args){
