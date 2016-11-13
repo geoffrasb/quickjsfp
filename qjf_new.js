@@ -1382,7 +1382,7 @@ function record(decstr){
 
   var cnstr = {};
   if(rec.hasRecConstructor){
-    cnstr = { name : rec.recConstructor.name.text
+    cnstr = { nametext : rec.recConstructor.name.text
             , cnstrfunc: function(){
                 checkValue(arguments.length, allkeys.length, 'input length', rec.recConstructor.name.text);
                 var res = {};
@@ -1424,6 +1424,17 @@ function record(decstr){
 
 //self, expected given `this`
 function evRecord(self, decstr){
+  var parsedrec = record(decstr);
+  var decstr = "";
+  if(parsedrec.cnstr!=null){
+    self[parsedrec.cnstr.nametext] = parsedrec.cnstr.cnstrfunc;
+    decstr += 'var '+parsedrec.cnstr.nametext+' = this.'+parsedrec.cnstr.nametext+';';
+  }
+  for(var k in parsedrec.getters){
+    self[k] = parsedrec.getters[k];
+    decstr += 'var '+k+' = this.'+k+';';
+  }
+  return decstr;
 }
 
 function evOpen(mod,str){
