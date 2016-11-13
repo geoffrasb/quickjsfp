@@ -1428,6 +1428,9 @@ function record(decstr){
          }
 }
 
+
+
+
 //self, expected given `this`
 function evRecord(self, decstr){
   checkType(self, Object, 'self', 'evRecord');
@@ -1437,17 +1440,93 @@ function evRecord(self, decstr){
   var decstr = "";
   if(parsedrec.cnstr!=null){
     self[parsedrec.cnstr.nametext] = parsedrec.cnstr.cnstrfunc;
-    decstr += 'var '+parsedrec.cnstr.nametext+' = this.'+parsedrec.cnstr.nametext+';';
+    decstr += 'var '+parsedrec.cnstr.nametext+' = this.'+parsedrec.cnstr.nametext+';\n';
   }
   for(var k in parsedrec.getters){
     self[k] = parsedrec.getters[k];
-    decstr += 'var '+k+' = this.'+k+';';
+    decstr += 'var '+k+' = this.'+k+';\n';
   }
   return decstr;
 }
 
-function evOpen(mod,str){
+
+
+
+function Open$Hid(s){
+  checkType(s,String,'s','Open$Hid');
+  s = s.trim();
+  if(!nameReg.test(s))
+    throw "error in Open$Hid: bad format:s="+s;
+  this.hiding = s;
+}
+function Open$Ren(f,t){
+  checkType(f,String,'f','Open$Ren');
+  checkType(t,String,'t','Open$Ren');
+  f = f.trim();
+  t = t.trim();
+  if(!(nameReg.test(f) && nameReg.test(t)))
+    throw "error in Open$Ren: bad format:f="+f+", t="+t;
+  this.from = f;
+  this.to = t;
+}
+
+//modnad is expected to be the symbol points to mod
+function evOpen(mod,modname,str){
   //mod could be javascript object or qjf's module
+  checkType(mod, Object, 'obj', 'evOpen');
+  checkType(modname, String, 'mod', 'evOpen');
+  checkType(str, String, 'str', 'evOpen');
+
+  var src = str.split(',');
+  try{
+    for(var i=0;i<src.length;i++){
+      var temp = src[i].split(' as ');
+      if(temp.length>1)
+        src[i] = new Open$Ren(temp[0],temp[1]);
+      else if(/-/.test(temp[0].trim()))
+        src[i] = new Open$Hid(temp[0].split('-')[1])
+      else
+        src[i] = src[i].trim();
+    }
+  }catch(e){
+    throw 'error in evOpen, possibly because of bad input string:'+e;
+  }
+
+  var ifOpenAll = true;
+    for(var i=0;i<src.length;i++){
+      if(src[i].constructor === String)
+        ifOpenAll = false;
+    }
+
+    var nameTable = {};
+    if(ifOpenAll){
+      for(var k in mod){
+        nameTable[k] = k;
+      }
+    }
+    for(var i=0;i<src.length;i++){
+      switch(src[i].constructor){
+        case String:
+          nameTable[src[i]] = src[i];
+          break;
+        case Open$Hid:
+          nameTable[src[i].hiding] = "";
+          break;
+        case Open$Ren:
+          nameTable[src[i].from] = src[i].to;
+          break;
+        default:
+          throw 'error 1 in evOpen';
+      }
+    }
+
+    var res = "";
+    for(var k in nameTable){
+      if(nameTable[k]!=""){
+        res += 'var '+nameTable[k]+' = '+modname+'.'+k+';\n'
+      }
+    }
+    return res;
 }
 
 function data(decstr){
