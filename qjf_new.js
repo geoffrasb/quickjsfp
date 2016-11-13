@@ -1360,7 +1360,7 @@ function module(decstr, body){
 
 //self: the context of the evaluation, expected to be `this`
 function evModule(self,decstr, body){
-  checkType(self, Object, 'self', 'evModule');
+  checkType(self, [Object,Window], 'self', 'evModule');
   checkType(decstr, String, 'decstr', 'evModule');
   checkType(body, Function, 'body', 'evModule');
 
@@ -1443,7 +1443,7 @@ function record(decstr){
 
 //self, expected given `this`
 function evRecord(self, decstr){
-  checkType(self, Object, 'self', 'evRecord');
+  checkType(self, [Object,Window], 'self', 'evRecord');
   checkType(decstr, String, 'decstr', 'evRecord');
 
   var parsedrec = record(decstr);
