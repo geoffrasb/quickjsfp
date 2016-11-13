@@ -5,6 +5,7 @@
 
 
 
+
 WholePattern = ps:Patterns {return new WholePattern(ps)}
        / cp:CPattern {return new WholePattern(cp)}
 
@@ -14,7 +15,7 @@ Patterns_ = (!. / &ImpossibleLeadings) {return []}
 
 IPattern = n:Number  {return new IPattern(n)}
      / s:ParseString {return new IPattern(s)}
-     / c:Name _ (!('@'/'*')) ps:IPattern_1 {
+     / '(' _ c:Name &(_ !('@'/'*')) ps:IPattern_1 _ ')' {
         if(ps.length == 0){
                 return c.text=='_' ? new IPattern(insDontCare) : new IPattern(c);
               }else{
@@ -41,8 +42,9 @@ IPattern = n:Number  {return new IPattern(n)}
                 , rn==null? [] : [rn[0].text=='_'?insDontCare:rn[0]]
                 , r));
            }
+         / v:Name {return new IPattern(v); }
          
-IPattern_1 =  (!. / &ImpossibleLeadings) {return []}
+IPattern_1 =  &(_ (!. / &ImpossibleLeadings)) {return []}
       / [ \t\n\r]+ ps:Patterns {return ps}
 
 ColonPatterns = p:IPattern _ ps:ColonPatterns_ {ps.unshift(p);return ps}
