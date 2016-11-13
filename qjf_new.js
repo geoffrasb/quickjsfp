@@ -2,6 +2,8 @@
 
 function checkType(x,types,xname,place){
   if(types.constructor !== Array){
+    if(typeof(x) == 'undefined')
+      throw "type error: "+place+": "+xname+" should be a "+types.name+", but it's undefined";
     if(x.constructor !== types)
       throw "type error: "+place+": "+xname+" should be a "+types.name+", but given: "+x.constructor.name;
   }else{
@@ -1348,10 +1350,14 @@ function module(decstr, body){
 
 //self: the context of the evaluation, expected to be `this`
 function evModule(self,decstr, body){
+  checkType(self, Object, 'self', 'evModule');
+  checkType(decstr, String, 'decstr', 'evModule');
+  checkType(body, Function, 'body', 'evModule');
+
+
   var mod = allparsers.parse(decstr, {startRule : 'ModuleDecl'});
   checkType(mod.name , Name, 'mod.name', 'evModule');
   checkArrayType(mod.params, Type, 'mod.params', 'evModule');
-  checkType(body, Function, 'body', 'evModule');
 
   if(mod.params.length != body.length)
     throw 'error at evModule: declared numbers of parameter doesn\'t match to body\'s arity.'
@@ -1424,6 +1430,9 @@ function record(decstr){
 
 //self, expected given `this`
 function evRecord(self, decstr){
+  checkType(self, Object, 'self', 'evRecord');
+  checkType(decstr, String, 'decstr', 'evRecord');
+
   var parsedrec = record(decstr);
   var decstr = "";
   if(parsedrec.cnstr!=null){
