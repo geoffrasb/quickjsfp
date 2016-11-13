@@ -257,9 +257,9 @@ function WholePattern(inp){
 
 //------- declarations
 
-function Constructor(name, type){
-  checkType(name, Name, 'name', 'Constructor');
-  checkType(type, Type, 'type', 'Constructor');
+function qjf$Constructor(name, type){
+  checkType(name, Name, 'name', 'qjf$Constructor');
+  checkType(type, Type, 'type', 'qjf$Constructor');
   this.name = name;
   this.type = type;
   this.arity = countArity(type);
@@ -326,7 +326,7 @@ function Record(name,parameters,type,fields,hasCnstr,cnstr){
       }
       fieldtypes.push(new Type(new ComposeType(name, paramNames)));
     }
-    this.recConstructor = new Constructor(cnstr, listType2Arrow(fieldtypes));
+    this.recConstructor = new qjf$Constructor(cnstr, listType2Arrow(fieldtypes));
   }else{
     this.recConstructor = null;
   }
@@ -387,7 +387,7 @@ function Data(name,params,type,cnstrs){
   checkType(name, Name, 'name', 'Data');
   checkArrayType(params, ParamType, 'params', 'Data');
   checkType(type, Type, 'type', 'Data');
-  checkArrayType(cnstrs, Constructor, 'cnstrs', 'Data');
+  checkArrayType(cnstrs, qjf$Constructor, 'cnstrs', 'Data');
 
   this.name = name;
   this.params = params;
@@ -687,9 +687,9 @@ allparsers = /*
                           return ps;
                         },
           function(cs) {return cs},
-          function(c, ct) {return [new Constructor(c,ct)];},
+          function(c, ct) {return [new qjf$Constructor(c,ct)];},
           function(c, ct, cs) {
-                           cs.unshift(new Constructor(c,ct))
+                           cs.unshift(new qjf$Constructor(c,ct))
                            return cs;
                          },
           function(n, ts) {return {name : n, params:ts}},
@@ -1529,8 +1529,11 @@ function evOpen(mod,modname,str){
     return res;
 }
 
+
+//`data` will make its constructors available
+//the constructors should contain information that helps pattern matching
 function data(decstr){
-  allparsers.parse(decstr, {startRule : 'DataDecl'});
+  var parseddata = allparsers.parse(decstr, {startRule : 'DataDecl'});
 }
 function evData(decstr){
 }
