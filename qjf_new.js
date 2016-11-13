@@ -1581,11 +1581,21 @@ function data(decstr){
 
   }
 
-  return { cnstrs : cnstrs
-         , backcnstrs : backcnstrs
+  return { typename: parseddata.name.text //String
+         , cnstrs : cnstrs                //Object
+         , backcnstrs : backcnstrs        //Object
          }
 }
-function evData(decstr){
+
+//expected self to be `this`
+function evData(self,decstr){
+  var d = data(decstr);
+  var res = "";
+  for(var k in d.cnstrs){
+    self[k] = d.cnstrs[k];
+    res += 'var '+k+' = this.'+k+';\n';
+  }
+  return res;
 }
 
 
