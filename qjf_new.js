@@ -670,7 +670,7 @@ allparsers = /*
           function(n, ps, t, r) {
                 var obsvs = [];
                       for(var i=0;i<r.type.keytypes.length;i++){
-                        obsvs.push(new qjf$Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
+                        obsvs.push(new Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
                       }
                 return new Codata(n,ps,t,obsvs);
                 },
@@ -840,8 +840,8 @@ allparsers = /*
           peg$decode("%;F/\xA9#;E/\xA0$;./\x97$;E/\x8E$23\"\"6374/\x7F$;E/v$;6/m$;E/d$2L\"\"6L7M/U$;E/L$;F.\" &\"/>$;E/5$;C/,$8-:S-%,*&\" )(-'#(,'#(+'#(*'#()'#(('#(''#(&'#(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%%<23\"\"6374=/##&'!&&#/& 8!:$! ).m &%;F/;#;E/2$;./)$8#:T#\"\" )(#'#(\"'#&'#.E &%;9/;#;E/2$;./)$8#:U#\"\" )(#'#(\"'#&'#"),
           peg$decode("%;0/S#;E/J$2L\"\"6L7M/;$;E/2$;2/)$8%:V%\"$ )(%'#($'#(#'#(\"'#&'#"),
-          peg$decode("%;F/o#;E/f$;1/]$;E/T$23\"\"6374/E$;E/<$;6/3$;E/*$8(:W(#'%!)(('#(''#(&'#(%'#($'#(#'#(\"'#&'#"),
-          peg$decode("%%<%;E/2#2L\"\"6L7M/#$+\")(\"'#&'#=/##&'!&&#/& 8!:$! ).E &%;9/;#;E/2$;1/)$8#:X#\"\" )(#'#(\"'#&'#"),
+          peg$decode("%;F/o#;E/f$;./]$;E/T$23\"\"6374/E$;E/<$;6/3$;E/*$8(:W(#'%!)(('#(''#(&'#(%'#($'#(#'#(\"'#&'#"),
+          peg$decode("%%<%;E/2#23\"\"6374/#$+\")(\"'#&'#=/##&'!&&#/& 8!:$! ).E &%;9/;#;E/2$;1/)$8#:X#\"\" )(#'#(\"'#&'#"),
           peg$decode("%%<1\"\"5!7#=.##&&!&'#/& 8!:$! )./ &%;3/' 8!:Y!! )"),
           peg$decode("%;F/v#;E/m$23\"\"6374/^$;E/U$;6/L$;E/C$%<1\"\"5!7#=.##&&!&'#/)$8':Z'\"&\")(''#(&'#(%'#($'#(#'#(\"'#&'#.\x88 &%;F/~#;E/u$23\"\"6374/f$;E/]$;6/T$;E/K$2A\"\"6A7B/<$;E/3$;3/*$8):[)#($ )()'#(('#(''#(&'#(%'#($'#(#'#(\"'#&'#"),
           peg$decode("%;F/;#;E/2$;5/)$8#:\\#\"\" )(#'#(\"'#&'#"),
@@ -1330,7 +1330,6 @@ allparsers = /*
 
 
 
-
 //------- Q.J.F. API
 // module,exporting,record,open,data,codata,func,REC,cases; literal expression
 
@@ -1549,11 +1548,42 @@ function evOpen(mod,modname,str){
 //`data` will make its constructors available
 //the constructors should contain information that helps pattern matching
 
-var makeConstructor = function(){
-}
 
 function data(decstr){
   var parseddata = allparsers.parse(decstr, {startRule : 'DataDecl'});
+
+  var cnstr_aritys = {} //{cnstrName:arity}
+  for(var i=0;i<parseddata.constructors.length;i++){
+    cnstr_aritys[parseddata.constructors[i].name.text] = parseddata.constructors[i].arity;
+  }
+
+  var cnstrs = {}
+  var backcnstrs = {}
+  for(var k in cnstr_aritys){
+    var vars = genVars(cnstr_aritys[k]);
+    var declstr = "";
+    for(var i=0;i<vars.length;i++){
+      declstr += 'this.'+vars[i]+' = '+vars[i]+';\n';
+    }
+
+    backcnstrs['qjf$'+k] = eval(
+        "(function qjf$"+k+"("+vars.join(',')+"){"
+      +  declstr
+      + "})"
+      )
+
+    if(cnstr_aritys[k]==0)
+      cnstrs[k] = new backcnstrs['qjf$'+k]();
+    else{
+      cnstrs[k] = eval("(function("+vars.join(',')+"){"
+        + "return new backcnstrs[\'qjf$"+k+"\']("+vars.join(',')+");})");
+    }
+
+  }
+
+  return { cnstrs : cnstrs
+         , backcnstrs : backcnstrs
+         }
 }
 function evData(decstr){
 }
@@ -1565,7 +1595,7 @@ function evData(decstr){
 
 
 function codata(decstr){
-  allparsers.parse(decstr, {startRule : 'CodataDecl'});
+  var parsedcodata = allparsers.parse(decstr, {startRule : 'CodataDecl'});
 }
 function evCodata(decstr){
 }

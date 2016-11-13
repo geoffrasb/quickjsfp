@@ -96,8 +96,8 @@ RecParams = &':' {return []}
             }
 
 DataDecl = l:DataLeft _  '=' _ r:DataRight {return new Data(l[0],l[1],l[2],r);}
-DataLeft = n:Name _ ps:DataParams _ ':' _ t:Type _ {return [n,ps,t];}
-DataParams =  &(_ '=') {return []}
+DataLeft = n:Name _ ps:RecParams _ ':' _ t:Type _ {return [n,ps,t];}
+DataParams =  &(_ ':') {return []}
       / p:Param _ ps:DataParams {
                 ps.unshift(p);
                 return ps;
