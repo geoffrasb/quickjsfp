@@ -698,9 +698,9 @@ allparsers = /*
                           return ps;
                         },
           function(cs) {return cs},
-          function(c, ct) {return [new Constructor(c,ct)];},
+          function(c, ct) {return [new qjf$Constructor(c,ct)];},
           function(c, ct, cs) {
-                           cs.unshift(new Constructor(c,ct))
+                           cs.unshift(new qjf$Constructor(c,ct))
                            return cs;
                          },
           function(n, ts) {return {name : n, params:ts}},
@@ -1626,6 +1626,19 @@ var recHelper = {};
 function REC(args){
 }
 
+
+
+
+//--------builtin data
+//Here's the List that list pattern matches, tuples will match to Arrays
+var _builtinList = 
+  data('List a : _ = Cons : a -> List a -> List a '
+                  +'| Nil : List a');
+var _builtinCons = _builtinList.cnstrs.Cons;
+var _builtinNil = _builtinList.cnstrs.Nil;
+
+//--------------------
+
 function cases(d,args){
   if(arguments.length < 3)
     throw "error in cases: not given enough arguments"
@@ -1639,7 +1652,12 @@ function cases(d,args){
     checkType(arguments[(x+1)*2], Function, 'arguments[2]', 'cases');
 
     var pat = allparsers.parse(arguments[x*2+1].trim(), {startRule: 'WholePattern'})
-    if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1)
+    if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1){
+      console.log("Warning in cases: given "+pat.wholepattern.length+
+                  " patterns, but only the first one will be matched.");
+    }
+
+
 
     x += 1;
   }while(matched);
