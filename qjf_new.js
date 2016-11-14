@@ -1716,7 +1716,31 @@ function makePattern(self,ipat,varnamelist){
   }
 }
 
+//returning false, or arguments to apply to corresponding body
+function makeAnIPatMatch(self, ipat, d){
+  checkType(self, [Object,Window], 'self', 'makeAnIPatMatch');
+  checkType(ipat, IPattern, 'ipat', 'makeAnIPatMatch');
+  if(typeof(d)=='undefined')
+    throw "error in makeAnIPatMatch: no data to match"
 
+  //start to construct pattern data for unification
+  var patternToMatch = makePattern(self,ipat,[]);
+
+  //start unification
+  var unifyResult = unification.unify(patternToMatch[0], d);
+
+  //feeding result to the corresponding callback
+  if(unifyResult != false){
+    //extract variables from unifyResult, according to patternToMatch[1] (varnamelist)
+    var varindex = uniqueArray(patternToMatch[1]);
+    for(var i=0;i<varindex.length;i++){
+      varindex[i] = unifyResult[varindex[i]];
+    }
+    return varindex;
+  }else{
+    return false;
+  }
+}
 
 //self is expected given `this`, in which available constructors are held.
 function cases(self,d,args){
@@ -1739,22 +1763,12 @@ function cases(self,d,args){
 
     if(pat.wholepattern.constructor === Array){
       //the pattern is a inductive pattern
-      //start to construct pattern data for unification
-      var patternToMatch = makePattern(self,pat.wholepattern[0], []);
+      var matchResult = makeAnIPatMatch(self,pat.wholepattern[0],d);
 
-      //start unification
-      var unifyResult = unification.unify(patternToMatch[0], d);
-
-      //feeding result to the corresponding callback
-      if(unifyResult != false){
-        matched = true;
-        //extract variables from unifyResult, according to patternToMatch[1] (varnamelist)
-        var varindex = uniqueArray(patternToMatch[1]);
-        for(var i=0;i<varindex.length;i++){
-          varindex[i] = unifyResult[varindex[i]];
-        }
-        return arguments[(x+1)*2].apply(this, varindex);
+      if(matchResult != false){
+        return arguments[(x+1)*2].apply(this, matchResult);
       }
+      
     }else{
       //the pattern is a coninductive pattern
       throw "error in cases: coinduction is only used in func."
