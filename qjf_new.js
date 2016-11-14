@@ -1567,17 +1567,17 @@ function data(decstr){
       declstr += 'this.'+vars[i]+' = '+vars[i]+';\n';
     }
 
-    backcnstrs['qjf$'+k] = eval(
-        "(function qjf$"+k+"("+vars.join(',')+"){"
+    backcnstrs['qjf$cnstr$'+k] = eval(
+        "(function qjf$cnstr$"+k+"("+vars.join(',')+"){"
       +  declstr
       + "})"
       )
 
     if(cnstr_aritys[k]==0)
-      cnstrs[k] = new backcnstrs['qjf$'+k]();
+      cnstrs[k] = new backcnstrs['qjf$cnstr$'+k]();
     else{
       cnstrs[k] = eval("(function("+vars.join(',')+"){"
-        + "return new backcnstrs[\'qjf$"+k+"\']("+vars.join(',')+");})");
+        + "return new backcnstrs[\'qjf$cnstr$"+k+"\']("+vars.join(',')+");})");
     }
 
   }
@@ -1621,10 +1621,12 @@ var Y = function(le) {
     });
 };
 
-var recHelper = {};
 
-function REC(args){
+var recHelperNotInUse = function(){
+  throw "error at REC: wrong using situation. REC should only be used in func."
 }
+var recHelper = recHelperNotInUse;
+var REC = function(){return recHelper.apply(this,arguments)}
 
 
 
@@ -1639,7 +1641,8 @@ var _builtinNil = _builtinList.cnstrs.Nil;
 
 //--------------------
 
-function cases(d,args){
+//self is expected given `this`, in which available constructors are held.
+function cases(self,d,args){
   if(arguments.length < 3)
     throw "error in cases: not given enough arguments"
 
@@ -1657,7 +1660,56 @@ function cases(d,args){
                   " patterns, but only the first one will be matched.");
     }
 
+    if(pat.wholepattern.constructor === Array){
+      //the pattern is a inductive pattern
+      //start to construct pattern data for unification
+      function rec(ipat){
+        checkType(ipat, IPattern, 'ipat', 'case:rec');
+        switch(ipat.ipattern.constructor){
+          case DontCare:          
+            return unification._;
 
+          case Name:
+            //If failed finding the name in the context as a constructor,
+            //  then make it a variable.
+            if(  typeof(self[ipat.ipattern.text])!='undefined'
+              && /^qjf\$cnstr\$/.test(self[ipat.ipattern.text].constructor.name))
+
+          case IntroFormPattern:
+            //first item should be a existed constructor
+
+          case Tuple:
+            var x = [];
+            for(var i=0;i<ipat.ipattern.items.length;i++){
+              x.push(rec(ipat.ipattern.items[i]));
+            }
+            return x;
+
+          case ConsPattern:
+            return _builtinCons(rec(ipat.ipattern.head), rec(ipat.ipattern.tail));
+
+          case NilPattern:
+            return _builtinNil;
+          
+          case Number:
+            return ipat.ipattern;
+          
+          case String:
+            return ipat.ipattern;
+          
+          default:
+            throw "error in cases: unknown pattern (was given a "
+                  +pat.wholepattern[0].ipattern.constructor.name+")";
+        }
+      }
+      
+
+      //start unification
+      //feeding result to the corresponding callback
+    }else{
+      //the pattern is a coninductive pattern
+      throw "error in cases: coinduction is only used in func."
+    }
 
     x += 1;
   }while(matched);
