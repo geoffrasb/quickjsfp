@@ -70,6 +70,20 @@ function genVars(n){
   return res;
 }
 
+function uniqueArray(arr){
+  checkType(arr, Array, 'arr', 'uniqueArray');
+  var temp = {};
+  for(var i=0;i<arr.length;i++){
+    if(typeof(temp[arr[i]])=='undefined')
+      temp[arr[i]] = 1;
+  }
+  var res = [];
+  for(var k in temp){
+    res.push(k);
+  }
+  return res;
+}
+
 
 // function List(items){
 //   checkType(items,Array,'items','List(internal)');
@@ -1641,6 +1655,69 @@ var _builtinNil = _builtinList.cnstrs.Nil;
 
 //--------------------
 
+function makePattern(self,ipat,varnamelist){
+  checkType(ipat, IPattern, 'ipat', 'makePattern');
+  checkType(varnamelist, Array, 'varnamelist', 'makePattern');
+  switch(ipat.ipattern.constructor){
+    case DontCare:          
+      return unification._;
+
+    case Name:
+      //If failed finding the name in the context as a constructor,
+      //  then make it a variable.
+      if(  typeof(self[ipat.ipattern.text])!='undefined'
+        && typeof(self['qjf\$cnstr\$'+ipat.ipattern.text])!='undefined'){
+        //Suppose if the real constructor('s name) exists, 
+        //  then the surfacial constructor exists.
+        //This is guaranteed by definition in `data`.
+        return self[ipat.ipattern.text];
+      }else{
+        varnamelist.push(ipat.ipattern.text);
+        return unification.variable(ipat.ipattern.text);
+      }
+
+    case IntroFormPattern:
+      //first item should be an existed constructor
+      //all the expectations are the same as in case Name.
+      if(  typeof(self[ipat.ipattern.text])=='undefined'
+        || typeof(self['qjf\$cnstr\$'+ipat.ipattern.text])=='undefined'){
+        throw "error in makePattern: no such constructor: "+ipat.ipattern.cnstr.text;
+      }
+      //match each pattern
+      var arglist = [];
+      for(var i=0;i<ipat.ipattern.patterns.length;i++){
+        arglist.push(makePattern(self,ipat.ipattern.patterns[i], varnamelist));
+      }
+      return self[ipat.ipattern.cnstr.text].apply(this, arglist);
+
+    case Tuple:
+      var x = [];
+      for(var i=0;i<ipat.ipattern.items.length;i++){
+        x.push(makePattern(self,ipat.ipattern.items[i],varnamelist));
+      }
+      return x;
+
+    case ConsPattern:
+      return _builtinCons( makePattern(self,ipat.ipattern.head, varnamelist)
+                         , makePattern(self,ipat.ipattern.tail, varnamelist));
+
+    case NilPattern:
+      return _builtinNil;
+    
+    case Number:
+      return ipat.ipattern;
+    
+    case String:
+      return ipat.ipattern;
+    
+    default:
+      throw "error in cases: unknown pattern (was given a "
+            +ipat.ipattern.constructor.name+")";
+  }
+}
+
+
+
 //self is expected given `this`, in which available constructors are held.
 function cases(self,d,args){
   if(arguments.length < 3)
@@ -1663,69 +1740,21 @@ function cases(self,d,args){
     if(pat.wholepattern.constructor === Array){
       //the pattern is a inductive pattern
       //start to construct pattern data for unification
-      function rec(ipat,varnamelist){
-        checkType(ipat, IPattern, 'ipat', 'case:rec');
-        switch(ipat.ipattern.constructor){
-          case DontCare:          
-            return unification._;
-
-          case Name:
-            //If failed finding the name in the context as a constructor,
-            //  then make it a variable.
-            if(  typeof(self[ipat.ipattern.text])!='undefined'
-              && typeof(self['qjf\$cnstr\$'+ipat.ipattern.text])!='undefined'){
-              //Suppose if the real constructor('s name) exists, 
-              //  then the surfacial constructor exists.
-              //This is guaranteed by definition in `data`.
-              return self[ipat.ipattern.text];
-            }else{
-              varnamelist.push(ipat.ipattern.text);
-              return unification.variable(ipat.ipattern.text);
-            }
-
-          case IntroFormPattern:
-            //first item should be an existed constructor
-            //all the expectations are the same as in case Name.
-            if(  typeof(self[ipat.ipattern.text])=='undefined'
-              || typeof(self['qjf\$cnstr\$'+ipat.ipattern.text])=='undefined'){
-              throw "error in cases:rec: no such constructor: "+ipat.ipattern.cnstr.text;
-            }
-            //match each pattern
-            var arglist = [];
-            for(var i=0;i<ipat.ipattern.patterns.length;i++){
-              arglist.push(rec(ipat.ipattern.patterns[i], varnamelist));
-            }
-            return self[ipat.ipattern.cnstr.text].apply(this, arglist);
-
-          case Tuple:
-            var x = [];
-            for(var i=0;i<ipat.ipattern.items.length;i++){
-              x.push(rec(ipat.ipattern.items[i],varnamelist));
-            }
-            return x;
-
-          case ConsPattern:
-            return _builtinCons( rec(ipat.ipattern.head, varnamelist)
-                               , rec(ipat.ipattern.tail, varnamelist));
-
-          case NilPattern:
-            return _builtinNil;
-          
-          case Number:
-            return ipat.ipattern;
-          
-          case String:
-            return ipat.ipattern;
-          
-          default:
-            throw "error in cases: unknown pattern (was given a "
-                  +pat.wholepattern[0].ipattern.constructor.name+")";
-        }
-      }
-      
+      var patternToMatch = makePattern(self,pat.wholepattern[0], []);
 
       //start unification
+      var unifyResult = unification.unify(patternToMatch[0], d);
+
       //feeding result to the corresponding callback
+      if(unifyResult != false){
+        matched = true;
+        //extract variables from unifyResult, according to patternToMatch[1] (varnamelist)
+        var varindex = uniqueArray(patternToMatch[1]);
+        for(var i=0;i<varindex.length;i++){
+          varindex[i] = unifyResult[varindex[i]];
+        }
+        return arguments[(x+1)*2].apply(this, varindex);
+      }
     }else{
       //the pattern is a coninductive pattern
       throw "error in cases: coinduction is only used in func."
@@ -1735,6 +1764,7 @@ function cases(self,d,args){
   }while(matched);
   if(!matched)
     throw "error in cases: no pattern matches."
+  throw "error in cases: shouldn't have gotten here."
 }
 
 function func(type,args){
