@@ -1663,7 +1663,7 @@ function cases(self,d,args){
     if(pat.wholepattern.constructor === Array){
       //the pattern is a inductive pattern
       //start to construct pattern data for unification
-      function rec(ipat){
+      function rec(ipat,varnamelist){
         checkType(ipat, IPattern, 'ipat', 'case:rec');
         switch(ipat.ipattern.constructor){
           case DontCare:          
@@ -1673,20 +1673,40 @@ function cases(self,d,args){
             //If failed finding the name in the context as a constructor,
             //  then make it a variable.
             if(  typeof(self[ipat.ipattern.text])!='undefined'
-              && /^qjf\$cnstr\$/.test(self[ipat.ipattern.text].constructor.name))
+              && typeof(self['qjf\$cnstr\$'+ipat.ipattern.text])!='undefined'){
+              //Suppose if the real constructor('s name) exists, 
+              //  then the surfacial constructor exists.
+              //This is guaranteed by definition in `data`.
+              return self[ipat.ipattern.text];
+            }else{
+              varnamelist.push(ipat.ipattern.text);
+              return unification.variable(ipat.ipattern.text);
+            }
 
           case IntroFormPattern:
-            //first item should be a existed constructor
+            //first item should be an existed constructor
+            //all the expectations are the same as in case Name.
+            if(  typeof(self[ipat.ipattern.text])=='undefined'
+              || typeof(self['qjf\$cnstr\$'+ipat.ipattern.text])=='undefined'){
+              throw "error in cases:rec: no such constructor: "+ipat.ipattern.cnstr.text;
+            }
+            //match each pattern
+            var arglist = [];
+            for(var i=0;i<ipat.ipattern.patterns.length;i++){
+              arglist.push(rec(ipat.ipattern.patterns[i], varnamelist));
+            }
+            return self[ipat.ipattern.cnstr.text].apply(this, arglist);
 
           case Tuple:
             var x = [];
             for(var i=0;i<ipat.ipattern.items.length;i++){
-              x.push(rec(ipat.ipattern.items[i]));
+              x.push(rec(ipat.ipattern.items[i],varnamelist));
             }
             return x;
 
           case ConsPattern:
-            return _builtinCons(rec(ipat.ipattern.head), rec(ipat.ipattern.tail));
+            return _builtinCons( rec(ipat.ipattern.head, varnamelist)
+                               , rec(ipat.ipattern.tail, varnamelist));
 
           case NilPattern:
             return _builtinNil;
