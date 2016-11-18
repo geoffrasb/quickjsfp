@@ -1501,6 +1501,8 @@ function evOpen(mod,modname,str){
   checkType(modname, String, 'mod', 'evOpen');
   checkType(str, String, 'str', 'evOpen');
 
+  if(typeof(str) == 'undefined')
+    str = '';
   var src = str.split(',');
   try{
     for(var i=0;i<src.length;i++){
@@ -1515,42 +1517,42 @@ function evOpen(mod,modname,str){
   }catch(e){
     throw 'error in evOpen, possibly because of bad input string:'+e;
   }
-
   var ifOpenAll = true;
-    for(var i=0;i<src.length;i++){
-      if(src[i].constructor === String)
-        ifOpenAll = false;
-    }
+  for(var i=0;i<src.length;i++){
+    if(src[i].constructor === String)
+      ifOpenAll = false;
+  }
+  if(src == '')
+    ifOpenAll = true;
 
-    var nameTable = {};
-    if(ifOpenAll){
-      for(var k in mod){
-        nameTable[k] = k;
-      }
+  var nameTable = {};
+  if(ifOpenAll){
+    for(var k in mod){
+      nameTable[k] = k;
     }
-    for(var i=0;i<src.length;i++){
-      switch(src[i].constructor){
-        case String:
-          nameTable[src[i]] = src[i];
-          break;
-        case Open$Hid:
-          nameTable[src[i].hiding] = "";
-          break;
-        case Open$Ren:
-          nameTable[src[i].from] = src[i].to;
-          break;
-        default:
-          throw 'error 1 in evOpen';
-      }
+  }
+  for(var i=0;i<src.length;i++){
+    switch(src[i].constructor){
+      case String:
+        nameTable[src[i]] = src[i];
+        break;
+      case Open$Hid:
+        nameTable[src[i].hiding] = "";
+        break;
+      case Open$Ren:
+        nameTable[src[i].from] = src[i].to;
+        break;
+      default:
+        throw 'error 1 in evOpen';
     }
-
-    var res = "";
-    for(var k in nameTable){
-      if(nameTable[k]!=""){
-        res += 'var '+nameTable[k]+' = '+modname+'.'+k+';\n'
-      }
+  }
+  var res = "";
+  for(var k in nameTable){
+    if(nameTable[k]!=""){
+      res += 'var '+nameTable[k]+' = '+modname+'.'+k+';\n'
     }
-    return res;
+  }
+  return res;
 }
 
 
@@ -1660,7 +1662,7 @@ function makePattern(self,ipat,varnamelist){
   checkType(varnamelist, Array, 'varnamelist', 'makePattern');
   switch(ipat.ipattern.constructor){
     case DontCare:          
-      return unification._;
+      return [unification._, varnamelist];
 
     case Name:
       //If failed finding the name in the context as a constructor,
@@ -1670,10 +1672,10 @@ function makePattern(self,ipat,varnamelist){
         //Suppose if the real constructor('s name) exists, 
         //  then the surfacial constructor exists.
         //This is guaranteed by definition in `data`.
-        return self[ipat.ipattern.text];
+        return [self[ipat.ipattern.text], varnamelist];
       }else{
         varnamelist.push(ipat.ipattern.text);
-        return unification.variable(ipat.ipattern.text);
+        return [unification.variable(ipat.ipattern.text), varnamelist];
       }
 
     case IntroFormPattern:
@@ -1688,27 +1690,28 @@ function makePattern(self,ipat,varnamelist){
       for(var i=0;i<ipat.ipattern.patterns.length;i++){
         arglist.push(makePattern(self,ipat.ipattern.patterns[i], varnamelist));
       }
-      return self[ipat.ipattern.cnstr.text].apply(this, arglist);
+      return [self[ipat.ipattern.cnstr.text].apply(this, arglist), varnamelist];
 
     case Tuple:
       var x = [];
       for(var i=0;i<ipat.ipattern.items.length;i++){
-        x.push(makePattern(self,ipat.ipattern.items[i],varnamelist));
+        x.push(makePattern(self,ipat.ipattern.items[i],varnamelist)[0]);
       }
-      return x;
+      return [x, varnamelist];
 
     case ConsPattern:
-      return _builtinCons( makePattern(self,ipat.ipattern.head, varnamelist)
-                         , makePattern(self,ipat.ipattern.tail, varnamelist));
+      return [_builtinCons( makePattern(self,ipat.ipattern.head, varnamelist)[0]
+                         , makePattern(self,ipat.ipattern.tail, varnamelist)[0])
+             , varnamelist];
 
     case NilPattern:
-      return _builtinNil;
+      return [_builtinNil, varnamelist];
     
     case Number:
-      return ipat.ipattern;
+      return [ipat.ipattern, varnamelist];
     
     case String:
-      return ipat.ipattern;
+      return [ipat.ipattern, varnamelist];
     
     default:
       throw "error in cases: unknown pattern (was given a "
@@ -1725,7 +1728,6 @@ function makeAnIPatMatch(self, ipat, d){
 
   //start to construct pattern data for unification
   var patternToMatch = makePattern(self,ipat,[]);
-
   //start unification
   var unifyResult = unification.unify(patternToMatch[0], d);
 
@@ -1744,7 +1746,7 @@ function makeAnIPatMatch(self, ipat, d){
 
 //self is expected given `this`, in which available constructors are held.
 function cases(self,d,args){
-  if(arguments.length < 3)
+  if(arguments.length < 4)
     throw "error in cases: not given enough arguments"
 
   //patterns are in positions of x*2+1
@@ -1752,10 +1754,10 @@ function cases(self,d,args){
   var x = 0;
   var matched = false;
   do{
-    checkType(arguments[x*2+1], String, 'arguments[1]', 'cases');
-    checkType(arguments[(x+1)*2], Function, 'arguments[2]', 'cases');
+    checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
+    checkType(arguments[(x+1)*2+1], Function, 'arguments['+(x*2+1)+']', 'cases');
 
-    var pat = allparsers.parse(arguments[x*2+1].trim(), {startRule: 'WholePattern'})
+    var pat = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
     if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1){
       console.log("Warning in cases: given "+pat.wholepattern.length+
                   " patterns, but only the first one will be matched.");
@@ -1765,8 +1767,8 @@ function cases(self,d,args){
       //the pattern is a inductive pattern
       var matchResult = makeAnIPatMatch(self,pat.wholepattern[0],d);
 
-      if(matchResult != false){
-        return arguments[(x+1)*2].apply(this, matchResult);
+      if(matchResult.constructor === Array){
+        return arguments[(x+1)*2+1].apply(this, matchResult);
       }
       
     }else{
