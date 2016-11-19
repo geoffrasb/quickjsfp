@@ -1741,8 +1741,8 @@ function makePattern(self,ipat,varnamelist){
 
 //returning false, or arguments to apply to corresponding body
 function makeIPatsMatch(self, ipats, d){
-  checkType(self, [Object,Window], 'self', 'makeAnIPatMatch');
-  checkArrayType(ipat, IPattern, 'ipat', 'makeAnIPatMatch');
+  checkType(self, [Object,Window], 'self', 'makeIPatsMatch');
+  checkArrayType(ipats, IPattern, 'ipats', 'makeIPatsMatch');
   if(typeof(d)=='undefined')
     throw "error in makeAnIPatMatch: no data to match"
 
@@ -1758,7 +1758,7 @@ function makeIPatsMatch(self, ipats, d){
   //feeding result to the corresponding callback
   if(unifyResult != false){
     //extract variables from unifyResult, according to patternToMatch[1] (varnamelist)
-    var varindex = uniqueArray(patternToMatch[1]);
+    var varindex = uniqueArray(totalVarnames);
     for(var i=0;i<varindex.length;i++){
       varindex[i] = unifyResult[varindex[i]];
     }
@@ -1792,6 +1792,7 @@ function cases(self,d,args){
       var matchResult = makeIPatsMatch(self,[pat.wholepattern[0]],[d]);
 
       if(matchResult.constructor === Array){
+        //match success
         return arguments[(x+1)*2+1].apply(self, matchResult);
       }
       
@@ -1801,7 +1802,7 @@ function cases(self,d,args){
     }
 
     x += 1;
-  }while(matched);
+  }while(!matched && x < ((arguments.length-2)/2));
   if(!matched)
     throw "error in cases: no pattern matches."
   throw "error in cases: shouldn't have gotten here."
@@ -1817,35 +1818,40 @@ function func(self,type,args){
 
   var ptype = allparsers.parse(type, {startRule : 'Type'});
   var arity = countArity(ptype);
-  console.log(ptype);
-  console.log(arity);
 
 
   //make a new function
+  return eval("(function(self,oriArgs,allparsers,checkType,makeIPatsMatch){\n"+
+    "return function("+genVars(arity).join(',')+"){\n"+
+    "  var x = 0;\n"+
+    "  var matched = false;\n"+
+    "  do{\n"+
+    "    checkType(oriArgs[x*2+2], String, 'oriArgs['+(x*2+2)+']', 'func');\n"+
+    "    checkType(oriArgs[(x+1)*2+1], [Function,String], 'oriArgs['+(x*2+1)+']', 'func');\n"+
 
-  var x = 0;
-  var matched = false;
-  do{
-    checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
-    checkType(arguments[(x+1)*2+1], [Function,String], 'arguments['+(x*2+1)+']', 'cases');
-
-    var pats = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
-    var callback = arguments[(x+1)*2+1];
-    if(pats.constructor === Array){
-      //inductive patterns
-      
-      var mat = makeIPatsMatch(self, pats, Array.from(arguments));
-      if(mat != false){
-        return apply(self,callback
-      }
-    }else{
-      //coinductive pattern
-    }
-    x += 1;
-  }while(!matched);
-  if(!matched)
-    throw "error in func: no pattern matches."
-  throw "error in func: shouldn't have gotten here."
+    "    var pats = allparsers.parse(oriArgs[x*2+2].trim(), {startRule: 'WholePattern'});\n"+
+    "    var callback = oriArgs[(x+1)*2+1];\n"+
+    "    if(pats.wholepattern.constructor === Array){\n"+
+          //inductive patterns
+          
+    "      var mat = makeIPatsMatch(self, pats.wholepattern, Array.from(arguments));\n"+
+    "      if(mat.constructor === Array){\n"+
+             //match success
+    "        if(callback.constructor === String)\n"+
+    "          return eval('('+callback+')')\n"+
+    "        else\n"+
+    "          return callback.apply(self, mat);\n"+
+    "     }\n"+
+    "    }else{\n"+
+          //coinductive pattern
+    "    }\n"+
+    "    x += 1;\n"+
+    "  }while(!matched && x < ((oriArgs.length-2)/2));\n"+
+    "  if(!matched)\n"+
+    "    throw 'error in func: no pattern matches.'\n"+
+    "  throw 'error in func: shouldn\\'t have gotten here.'\n"+
+    "}\n"+ 
+  "})")(self,Array.from(arguments),allparsers,checkType,makeIPatsMatch);
 }
 
 
