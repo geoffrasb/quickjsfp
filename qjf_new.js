@@ -1621,9 +1621,29 @@ function evData(self,decstr){
 
 
 //brings two objects in: coinductions that make codatas, observer functions
-function codata(decstr){
-  var parsedcodata = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
-}
+// creates specific codata objects and observers
+// function codata(decstr){
+//   var parsedcodata = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
+
+  
+//   var codatacnstr = 
+//     function cocnstrStream(ipats_cbacks){
+//       //ipat_cbacks : [[[ipat], cback] ...]
+//       checkArrayType(ipat_cbacks, Array, 'ipat_cbacks', 'cocnstrStream');
+//       for(var i=0;i<ipat_cbacks.length;i++){
+//         checkArrayType(ipat_cbacks[i][0], IPattern, 'ipat_cbacks['+i+'][0]', 'cocnstrStream');
+//         checkType(ipat_cbacks[i][1], Function, 'ipat_cbacks['+i+'][1]', 'cocnstrStream');
+//       }
+
+//       this.qjf$obsvr$Stream$head = ...
+//       this.qjf$obsvr$Stream$tail = ...
+//     }
+
+//   return { typename: parsedcodata.name.text
+//          , codatacnstr:
+//          , obsvrs:
+//          }
+// }
 function evCodata(decstr){
 }
 
@@ -1639,7 +1659,7 @@ var Y = function(le) {
 
 
 var recHelperNotInUse = function(){
-  throw "error at REC: wrong using situation. REC should only be used in func."
+  throw "error at REC: wrong using situation. REC should only be used in `func`."
 }
 var recHelper = recHelperNotInUse;
 var REC = function(){return recHelper.apply(this,arguments)}
@@ -1720,16 +1740,20 @@ function makePattern(self,ipat,varnamelist){
 }
 
 //returning false, or arguments to apply to corresponding body
-function makeAnIPatMatch(self, ipat, d){
+function makeIPatsMatch(self, ipats, d){
   checkType(self, [Object,Window], 'self', 'makeAnIPatMatch');
-  checkType(ipat, IPattern, 'ipat', 'makeAnIPatMatch');
+  checkArrayType(ipat, IPattern, 'ipat', 'makeAnIPatMatch');
   if(typeof(d)=='undefined')
     throw "error in makeAnIPatMatch: no data to match"
 
   //start to construct pattern data for unification
-  var patternToMatch = makePattern(self,ipat,[]);
+  var totalVarnames = []
+  var patternToMatch = []; //makePattern(self,ipat,[]);
+  for(var i=0;i<ipats.length;i++){
+    patternToMatch.push(makePattern(self,ipats[i],totalVarnames)[0]);
+  }
   //start unification
-  var unifyResult = unification.unify(patternToMatch[0], d);
+  var unifyResult = unification.unify(patternToMatch, d);
 
   //feeding result to the corresponding callback
   if(unifyResult != false){
@@ -1765,7 +1789,7 @@ function cases(self,d,args){
 
     if(pat.wholepattern.constructor === Array){
       //the pattern is a inductive pattern
-      var matchResult = makeAnIPatMatch(self,pat.wholepattern[0],d);
+      var matchResult = makeIPatsMatch(self,[pat.wholepattern[0]],[d]);
 
       if(matchResult.constructor === Array){
         return arguments[(x+1)*2+1].apply(this, matchResult);
@@ -1783,7 +1807,38 @@ function cases(self,d,args){
   throw "error in cases: shouldn't have gotten here."
 }
 
-function func(type,args){
+//self is expected given `this`, in which available constructors are held.
+function func(self,type,args){
+  checkType(self, [Object,Window], 'self', 'func');
+  checkType(type, String, 'type', 'funcs');
+  if(arguments.length < 4)
+    throw "error in func: not given enough arguments"
+
+  var ptype = allparsers.parse(type, {startRule : 'Type'});
+  var arity = countArity(ptype);
+  console.log(ptype);
+  console.log(arity);
+
+  var x = 0;
+  var matched = false;
+  do{
+    checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
+    checkType(arguments[(x+1)*2+1], Function, 'arguments['+(x*2+1)+']', 'cases');
+
+    var pats = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
+    if(pats.constructor === Array){
+      //inductive patterns
+      var totalVarnames = [];
+      for(var i=0;i<pats.length;i++){
+
+      }
+    }else{
+      //coinductive pattern
+    }
+  }while(!matched);
+  if(!matched)
+    throw "error in func: no pattern matches."
+  throw "error in func: shouldn't have gotten here."
 }
 
 
