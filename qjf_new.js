@@ -1663,7 +1663,7 @@ var recHelperNotInUse = function(){
 }
 var recHelper = recHelperNotInUse;
 var REC = function(){return recHelper.apply(this,arguments)}
-
+//***need to change the context
 
 
 
@@ -1710,7 +1710,7 @@ function makePattern(self,ipat,varnamelist){
       for(var i=0;i<ipat.ipattern.patterns.length;i++){
         arglist.push(makePattern(self,ipat.ipattern.patterns[i], varnamelist));
       }
-      return [self[ipat.ipattern.cnstr.text].apply(this, arglist), varnamelist];
+      return [self[ipat.ipattern.cnstr.text].apply(self, arglist), varnamelist];
 
     case Tuple:
       var x = [];
@@ -1792,7 +1792,7 @@ function cases(self,d,args){
       var matchResult = makeIPatsMatch(self,[pat.wholepattern[0]],[d]);
 
       if(matchResult.constructor === Array){
-        return arguments[(x+1)*2+1].apply(this, matchResult);
+        return arguments[(x+1)*2+1].apply(self, matchResult);
       }
       
     }else{
@@ -1807,6 +1807,7 @@ function cases(self,d,args){
   throw "error in cases: shouldn't have gotten here."
 }
 
+
 //self is expected given `this`, in which available constructors are held.
 function func(self,type,args){
   checkType(self, [Object,Window], 'self', 'func');
@@ -1819,22 +1820,28 @@ function func(self,type,args){
   console.log(ptype);
   console.log(arity);
 
+
+  //make a new function
+
   var x = 0;
   var matched = false;
   do{
     checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
-    checkType(arguments[(x+1)*2+1], Function, 'arguments['+(x*2+1)+']', 'cases');
+    checkType(arguments[(x+1)*2+1], [Function,String], 'arguments['+(x*2+1)+']', 'cases');
 
     var pats = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
+    var callback = arguments[(x+1)*2+1];
     if(pats.constructor === Array){
       //inductive patterns
-      var totalVarnames = [];
-      for(var i=0;i<pats.length;i++){
-
+      
+      var mat = makeIPatsMatch(self, pats, Array.from(arguments));
+      if(mat != false){
+        return apply(self,callback
       }
     }else{
       //coinductive pattern
     }
+    x += 1;
   }while(!matched);
   if(!matched)
     throw "error in func: no pattern matches."
