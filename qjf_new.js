@@ -1675,6 +1675,19 @@ var _builtinList =
 var _builtinCons = _builtinList.cnstrs.Cons;
 var _builtinNil = _builtinList.cnstrs.Nil;
 
+function array2list(arr){
+  checkType(arr,Array,'arr','array2list');
+  var res = _builtinNil;
+  for(var i=arr.length-1; i>=0;i--){
+    res = _builtinCons(arr[i], res);
+  }
+  return res;
+}
+function le(arr){
+  checkType(arr,Array,'arr','le');
+  return array2list(arr);
+}
+
 //--------------------
 
 
