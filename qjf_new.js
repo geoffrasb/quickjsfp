@@ -1677,6 +1677,7 @@ var _builtinNil = _builtinList.cnstrs.Nil;
 
 //--------------------
 
+
 function makePattern(self,ipat,varnamelist){
   checkType(ipat, IPattern, 'ipat', 'makePattern');
   checkType(varnamelist, Array, 'varnamelist', 'makePattern');
@@ -1768,6 +1769,43 @@ function makeIPatsMatch(self, ipats, d){
   }
 }
 
+// no matter how many patterns in patsrc, it'll be parsed into an array
+function Match(self, d, patsrc, callback){
+  checkType(patsrc, String, 'patsrc', 'Match');
+  checkType(callback, [String, Function], 'callback', 'Match');
+  try{
+    var pat = allparsers.parse(patsrc.trim(), {startRule: 'WholePattern'});
+
+    this.data = d;
+    this.pat = pat;
+    this.isCopattern = pat.wholepattern.constructor === CPattern;
+    this.executed = false;
+    this.executeMatch = function(){
+      if(this.isCopattern){
+        console.log('Warning: copattern won\'t match, no result has been produced.');
+      }else{
+        var matchResult = makeIPatsMatch(self,pat.wholepattern,d);
+        if(matchResult.constructor === Array){
+          //match success
+          if(callback.constructor === Function)
+            this.matchResult = callback.apply(self, matchResult);
+          else
+            this.matchResult = eval('('+callback+')');
+          this.matchSuccess = true;
+        }else{
+          this.matchSuccess = false;
+        }
+        this.executed = true;
+      }
+    }
+    this.matchResult = null;
+    this.matchSuccess = false;
+  }catch(e){
+    throw 'Match:'+e;
+  }
+}
+
+
 //self is expected given `this`, in which available constructors are held.
 function cases(self,d,args){
   if(arguments.length < 4)
@@ -1779,7 +1817,9 @@ function cases(self,d,args){
   var matched = false;
   do{
     checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
-    checkType(arguments[(x+1)*2+1], Function, 'arguments['+(x*2+1)+']', 'cases');
+    checkType(arguments[(x+1)*2+1], [Function, String], 'arguments['+(x*2+1)+']', 'cases');
+
+    var callback = arguments[(x+1)*2+1];
 
     var pat = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
     if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1){
@@ -1793,12 +1833,15 @@ function cases(self,d,args){
 
       if(matchResult.constructor === Array){
         //match success
-        return arguments[(x+1)*2+1].apply(self, matchResult);
+        if(callback.constructor === Function)
+          return callback.apply(self, matchResult);
+        else
+          return eval('('+callback+')');
       }
       
     }else{
       //the pattern is a coninductive pattern
-      throw "error in cases: coinduction is only used in func."
+      throw "copatterns can only be used in func."
     }
 
     x += 1;
@@ -1823,33 +1866,46 @@ function func(self,type,args){
   //make a new function
   return eval("(function(self,oriArgs,allparsers,checkType,makeIPatsMatch){\n"+
     "return function("+genVars(arity).join(',')+"){\n"+
-    "  var x = 0;\n"+
-    "  var matched = false;\n"+
-    "  do{\n"+
-    "    checkType(oriArgs[x*2+2], String, 'oriArgs['+(x*2+2)+']', 'func');\n"+
-    "    checkType(oriArgs[(x+1)*2+1], [Function,String], 'oriArgs['+(x*2+1)+']', 'func');\n"+
+    "try{\n"+
+    "  var tocases = Array.from(oriArgs).slice(2);\n"+
+    "  tocases.unshift(Array.from(arguments));\n"+
+    "  tocases.unshift(self);\n"+
+    "  return cases.apply(self, tocases);\n"+
+      //gonna check if cases works in this situation
+    "}catch(e){\n"+
+    "  if(/copatterns/.test(e)){\n"+
+        //dealing with copattern
+    "  }else{\n"+
+    "    throw e;\n"+
+    "  }\n"+
+    "}\n"+
+    // "  var x = 0;\n"+
+    // "  var matched = false;\n"+
+    // "  do{\n"+
+    // "    checkType(oriArgs[x*2+2], String, 'oriArgs['+(x*2+2)+']', 'func');\n"+
+    // "    checkType(oriArgs[(x+1)*2+1], [Function,String], 'oriArgs['+(x*2+1)+']', 'func');\n"+
 
-    "    var pats = allparsers.parse(oriArgs[x*2+2].trim(), {startRule: 'WholePattern'});\n"+
-    "    var callback = oriArgs[(x+1)*2+1];\n"+
-    "    if(pats.wholepattern.constructor === Array){\n"+
-          //inductive patterns
+    // "    var pats = allparsers.parse(oriArgs[x*2+2].trim(), {startRule: 'WholePattern'});\n"+
+    // "    var callback = oriArgs[(x+1)*2+1];\n"+
+    // "    if(pats.wholepattern.constructor === Array){\n"+
+    //       //inductive patterns
           
-    "      var mat = makeIPatsMatch(self, pats.wholepattern, Array.from(arguments));\n"+
-    "      if(mat.constructor === Array){\n"+
-             //match success
-    "        if(callback.constructor === String)\n"+
-    "          return eval('('+callback+')')\n"+
-    "        else\n"+
-    "          return callback.apply(self, mat);\n"+
-    "     }\n"+
-    "    }else{\n"+
-          //coinductive pattern
-    "    }\n"+
-    "    x += 1;\n"+
-    "  }while(!matched && x < ((oriArgs.length-2)/2));\n"+
-    "  if(!matched)\n"+
-    "    throw 'error in func: no pattern matches.'\n"+
-    "  throw 'error in func: shouldn\\'t have gotten here.'\n"+
+    // "      var mat = makeIPatsMatch(self, pats.wholepattern, Array.from(arguments));\n"+
+    // "      if(mat.constructor === Array){\n"+
+    //          //match success
+    // "        if(callback.constructor === String)\n"+
+    // "          return eval('('+callback+')')\n"+
+    // "        else\n"+
+    // "          return callback.apply(self, mat);\n"+
+    // "     }\n"+
+    // "    }else{\n"+
+    //       //coinductive pattern
+    // "    }\n"+
+    // "    x += 1;\n"+
+    // "  }while(!matched && x < ((oriArgs.length-2)/2));\n"+
+    // "  if(!matched)\n"+
+    // "    throw 'error in func: no pattern matches.'\n"+
+    // "  throw 'error in func: shouldn\\'t have gotten here.'\n"+
     "}\n"+ 
   "})")(self,Array.from(arguments),allparsers,checkType,makeIPatsMatch);
 }
