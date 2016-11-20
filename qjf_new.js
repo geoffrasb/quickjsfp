@@ -1647,23 +1647,10 @@ function evData(self,decstr){
 function evCodata(decstr){
 }
 
-var Y = function(le) {
-    return function(f) {
-        return f(f);
-    }(function(f) {
-        return le(
-            function(x) { return (f(f))(x); }
-        );
-    });
-};
 
 
-var recHelperNotInUse = function(){
-  throw "error at REC: wrong using situation. REC should only be used in `func`."
-}
-var recHelper = recHelperNotInUse;
-var REC = function(){return recHelper.apply(this,arguments)}
-//***need to change the context
+
+
 
 
 
@@ -1849,6 +1836,43 @@ function cases(self,d,args){
 }
 
 
+var Y = function(le) {
+    return function(f) {
+        return f(f);
+    }(function(f) {
+        return le(
+            function(x) { return (f(f))(x); }
+        );
+    });
+};
+// var recHelperNotInUse = function(){
+//   throw "REC: wrong using situation. REC should only be used in `func`."
+// }
+// var recHelper = recHelperNotInUse;
+var REC = {}//function(self){return recHelper.apply(self,arguments)}
+//***need to change the context
+
+//-----experiment with REC-----------
+// var spmatches = makeMatches(this,['[]','0','(x:xs)',function(x,xs){return 1+REC(xs)}])
+// var sp = function(_0){
+//   return Y(function(rec){
+//     REC = rec;
+//     return function(_0){
+//       var res = spmatches[0].matchData(Array.from(arguments));
+//       if(res[0])
+//         return res[1];
+//       res = spmatches[1].matchData(Array.from(arguments));
+//       if(res[0])
+//         return res[1];
+//       throw 'no pattern'
+//     }
+//   })(_0);
+// }
+
+
+
+
+
 //self is expected given `this`, in which available constructors are held.
 function func(self,type,args){
   checkType(self, [Object,Window], 'self', 'func');
@@ -1871,15 +1895,36 @@ function func(self,type,args){
     //dealling with copattern
   }else{
     return eval("(function(matches){\n"+
-    "  return function("+genVars(arity).join(',')+"){\n"+
-    "    for(var i=0;i<matches.length;i++){\n"+
-    "      var res = matches[i].matchData(Array.from(arguments));\n"+
-    "      if(res[0])\n"+
-    "        return res[1];\n"+
-    "    }\n"+
-    "    throw 'no pattern matched'\n"+
-    "  }\n"+
+
+      "return function("+genVars(arity).join(',')+"){\n"+
+      "  return Y(function(rec){\n"+
+      "    REC = rec;\n"+
+          //---
+      "    return function("+genVars(arity).join(',')+"){\n"+
+      "      for(var i=0;i<matches.length;i++){\n"+
+      "        var res = matches[i].matchData(Array.from(arguments));\n"+
+      "        if(res[0])\n"+
+      "          return res[1];\n"+
+      "      }\n"+
+      "      throw 'no pattern matched'\n"+
+      "    }\n"+
+          //----
+      "  })("+genVars(arity).join(',')+");\n"+
+      "}\n"+
+
+
+
     "})")(matches)
+    // return eval("(function(matches){\n"+
+    // "  return function("+genVars(arity).join(',')+"){\n"+
+    // "    for(var i=0;i<matches.length;i++){\n"+
+    // "      var res = matches[i].matchData(Array.from(arguments));\n"+
+    // "      if(res[0])\n"+
+    // "        return res[1];\n"+
+    // "    }\n"+
+    // "    throw 'no pattern matched'\n"+
+    // "  }\n"+
+    // "})")(matches)
   }
 }
 
