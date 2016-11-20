@@ -1757,8 +1757,8 @@ function makeIPatsMatch(self, ipats, d){
   var unifyResult = unification.unify(patternToMatch, d);
 
   //feeding result to the corresponding callback
-  if(unifyResult != false){
-    //extract variables from unifyResult, according to patternToMatch[1] (varnamelist)
+  if(unifyResult.constructor === Object){
+    //extract variables from unifyResult, according to totalVarnames (namelist)
     var varindex = uniqueArray(totalVarnames);
     for(var i=0;i<varindex.length;i++){
       varindex[i] = unifyResult[varindex[i]];
@@ -1770,85 +1770,107 @@ function makeIPatsMatch(self, ipats, d){
 }
 
 // no matter how many patterns in patsrc, it'll be parsed into an array
-function Match(self, d, patsrc, callback){
+function Match(self, patsrc, callback){
   checkType(patsrc, String, 'patsrc', 'Match');
   checkType(callback, [String, Function], 'callback', 'Match');
   try{
     var pat = allparsers.parse(patsrc.trim(), {startRule: 'WholePattern'});
 
-    this.data = d;
-    this.pat = pat;
+    this.pat = pat.wholepattern;
     this.isCopattern = pat.wholepattern.constructor === CPattern;
-    this.executed = false;
-    this.executeMatch = function(){
+    this.matchData = function(d){
       if(this.isCopattern){
         console.log('Warning: copattern won\'t match, no result has been produced.');
       }else{
-        var matchResult = makeIPatsMatch(self,pat.wholepattern,d);
+        var matchResult = makeIPatsMatch(self,this.pat,d);
         if(matchResult.constructor === Array){
           //match success
           if(callback.constructor === Function)
-            this.matchResult = callback.apply(self, matchResult);
+            return [true, callback.apply(self, matchResult)];
           else
-            this.matchResult = eval('('+callback+')');
-          this.matchSuccess = true;
+            return [true, eval('('+callback+')')];
         }else{
-          this.matchSuccess = false;
+          return [false, null]
         }
-        this.executed = true;
       }
     }
-    this.matchResult = null;
-    this.matchSuccess = false;
   }catch(e){
     throw 'Match:'+e;
   }
 }
 
+function makeMatches(self,pat_cb_args){
+  if(pat_cb_args.length<2 || pat_cb_args.length%2!=0)
+    throw "makeMatches: wrong pat_cb_args length which should be in even number and at least 2."
+  for(var x = 0;x<pat_cb_args.length/2;x++){
+    checkType(pat_cb_args[x*2], String, 'pat_cb_args['+x*2+']', 'makeMatches');
+    checkType(pat_cb_args[x*2+1], [String, Function], 'pat_cb_args['+(x*2+1)+']', 'makeMatches');
+  }
+
+  var res = [];
+  for(var x = 0;x<pat_cb_args.length/2;x++){
+    res.push(new Match(self,pat_cb_args[x*2],pat_cb_args[x*2+1]));
+  }
+  return res;
+}
 
 //self is expected given `this`, in which available constructors are held.
 function cases(self,d,args){
   if(arguments.length < 4)
     throw "error in cases: not given enough arguments"
 
-  //patterns are in positions of x*2+1
-  //callbacks are in (x+1)*2
-  var x = 0;
-  var matched = false;
-  do{
-    checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
-    checkType(arguments[(x+1)*2+1], [Function, String], 'arguments['+(x*2+1)+']', 'cases');
+  checkType(self,[Object,Window],'self','cases');
 
-    var callback = arguments[(x+1)*2+1];
-
-    var pat = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
-    if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1){
-      console.log("Warning in cases: given "+pat.wholepattern.length+
-                  " patterns, but only the first one will be matched.");
-    }
-
-    if(pat.wholepattern.constructor === Array){
-      //the pattern is a inductive pattern
-      var matchResult = makeIPatsMatch(self,[pat.wholepattern[0]],[d]);
-
-      if(matchResult.constructor === Array){
-        //match success
-        if(callback.constructor === Function)
-          return callback.apply(self, matchResult);
-        else
-          return eval('('+callback+')');
-      }
-      
-    }else{
-      //the pattern is a coninductive pattern
+  var matches = makeMatches(self,Array.from(arguments).slice(2));
+  for(var i = 0; i<matches.length; i++){
+    if(matches[i].isCopattern)
       throw "copatterns can only be used in func."
+
+    var mr = matches[i].matchData([d]);
+    if(mr[0]){
+      return mr[1];
     }
 
-    x += 1;
-  }while(!matched && x < ((arguments.length-2)/2));
-  if(!matched)
-    throw "error in cases: no pattern matches."
-  throw "error in cases: shouldn't have gotten here."
+  }
+  throw 'cases: no pattern matched'
+  // //patterns are in positions of x*2+1
+  // //callbacks are in (x+1)*2
+  // var x = 0;
+  // var matched = false;
+  // do{
+  //   checkType(arguments[x*2+2], String, 'arguments['+(x*2+2)+']', 'cases');
+  //   checkType(arguments[(x+1)*2+1], [Function, String], 'arguments['+(x*2+1)+']', 'cases');
+
+  //   var callback = arguments[(x+1)*2+1];
+
+  //   var pat = allparsers.parse(arguments[x*2+2].trim(), {startRule: 'WholePattern'})
+  //   if(pat.wholepattern.constructor === Array && pat.wholepattern.length>1){
+  //     console.log("Warning in cases: given "+pat.wholepattern.length+
+  //                 " patterns, but only the first one will be matched.");
+  //   }
+
+  //   if(pat.wholepattern.constructor === Array){
+  //     //the pattern is a inductive pattern
+  //     var matchResult = makeIPatsMatch(self,[pat.wholepattern[0]],[d]);
+
+  //     if(matchResult.constructor === Array){
+  //       //match success
+  //       if(callback.constructor === Function)
+  //         return callback.apply(self, matchResult);
+  //       else
+  //         return eval('('+callback+')');
+  //     }
+      
+  //   }else{
+  //     //the pattern is a coninductive pattern
+  //     throw "copatterns can only be used in func."
+  //   }
+
+  //   x += 1;
+  // }while(!matched && x < ((arguments.length-2)/2));
+  // if(!matched)
+  //   throw "error in cases: no pattern matches."
+  // throw "error in cases: shouldn't have gotten here."
 }
 
 
