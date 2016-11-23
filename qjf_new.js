@@ -1620,34 +1620,6 @@ function evData(self,decstr){
 
 
 
-//brings two objects in: coinductions that make codatas, observer functions
-// creates specific codata objects and observers
-// function codata(decstr){
-//   var parsedcodata = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
-
-  
-//   var codatacnstr = 
-//     function cocnstrStream(ipats_cbacks){
-//       //ipat_cbacks : [[[ipat], cback] ...]
-//       checkArrayType(ipat_cbacks, Array, 'ipat_cbacks', 'cocnstrStream');
-//       for(var i=0;i<ipat_cbacks.length;i++){
-//         checkArrayType(ipat_cbacks[i][0], IPattern, 'ipat_cbacks['+i+'][0]', 'cocnstrStream');
-//         checkType(ipat_cbacks[i][1], Function, 'ipat_cbacks['+i+'][1]', 'cocnstrStream');
-//       }
-
-//       this.qjf$obsvr$Stream$head = ...
-//       this.qjf$obsvr$Stream$tail = ...
-//     }
-
-//   return { typename: parsedcodata.name.text
-//          , codatacnstr:
-//          , obsvrs:
-//          }
-// }
-function evCodata(decstr){
-}
-
-
 
 
 
@@ -1814,6 +1786,59 @@ function makeMatches(self,pat_cb_args){
   return res;
 }
 
+
+
+
+
+//brings two objects in: coinductions that make codatas, observer functions
+// creates codata constructor and observers
+// codata constructor: qjf$codata$CodataName
+// observer: qjf$obsvr$CodataName$
+// function codata(decstr){
+//   var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
+
+  
+//   var codatacnstr = 
+//     function qjf$codata$Stream(matches){
+//       checkArrayType(matches, Match, 'matches', 'qjf$codata$Stream');
+//       this.qjf$obsvr$Stream$head = function(genVars(matches.length).split(',')){
+//         var res;
+//         for(var i=0;i<matches.length;i++){
+//           res = matches[i].matchData
+//         }
+//       }
+//     }
+
+//   var obsvrs = {};
+//   for(var i=0;i<prs.observers.length;i++){
+//     obsvrs[prs.observers[i]] = (function(i){
+//       return function(x){
+//         checkType( x
+//                  , eval('(qjf$codata$'+prs.name.text+')')
+//                  , 'x'
+//                  , prs.observers[i]);
+//         return x['qjf$obsvr$'+prs.name.text+'$'+prs.obervsers[i]]();
+//       }
+//     })(i);
+//   }
+  
+
+
+//   return { typename: prs.name.text
+//          , codatacnstr:
+//          , obsvrs: obsvrs
+//          }
+// }
+function evCodata(decstr){
+}
+
+
+
+
+
+
+
+
 //self is expected given `this`, in which available constructors are held.
 function cases(self,d,args){
   if(arguments.length < 4)
@@ -1891,12 +1916,16 @@ function func(self,type,args){
       throw 'func: copatterns and patterns cannot be mixed.'
     existsCP = matches[i].isCopattern;
   }
+  window.matches = matches;
   if(existsCP){
     //dealling with copattern
+    //make a codata, the constructor should be accessible in self
+
   }else{
     return eval("(function(matches){\n"+
 
       "return function("+genVars(arity).join(',')+"){\n"+
+      "  checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+
       "  return Y(function(rec){\n"+
       "    REC = rec;\n"+
           //---
@@ -1915,16 +1944,6 @@ function func(self,type,args){
 
 
     "})")(matches)
-    // return eval("(function(matches){\n"+
-    // "  return function("+genVars(arity).join(',')+"){\n"+
-    // "    for(var i=0;i<matches.length;i++){\n"+
-    // "      var res = matches[i].matchData(Array.from(arguments));\n"+
-    // "      if(res[0])\n"+
-    // "        return res[1];\n"+
-    // "    }\n"+
-    // "    throw 'no pattern matched'\n"+
-    // "  }\n"+
-    // "})")(matches)
   }
 }
 
