@@ -1851,14 +1851,16 @@ function codata(decstr){
 
   var obsvrs = {};
   for(var i=0;i<prs.observers.length;i++){
-    obsvrs[prs.observers[i]] = (function(i){
-      return function(x){
+    obsvrs[prs.observers[i].name.text] = (function(i){
+      var res = function(x){
         checkType( x
                  , eval('(qjf$codata$'+prs.name.text+')')
                  , 'x'
-                 , prs.observers[i]);
-        return x['qjf$obsvr$'+prs.name.text+'$'+prs.obervsers[i]]();
+                 , prs.observers[i].name.text);
+        return x['qjf$obsvr$'+prs.name.text+'$'+prs.obervsers[i].name.text]();
       }
+      res.qjf$obsvr_of = prs.name.text;
+      return res;
     })(i);
   }
   
@@ -1876,10 +1878,13 @@ function evCodata(self,decstr){
   checkType(decstr, String, 'decstr', 'evCodata');
 
   var cd = codata(decstr);
+  var res = "";
   self[cd.codatacnstr.name] = cd.codatacnstr;
   for(var k in cd.obsvrs){
     self[k] = cd.obsvrs[k];
+    res += "var "+k+" = this."+k+";\n";
   }
+  return res;
 }
 
 
@@ -1969,7 +1974,8 @@ function func(self,type,args){
   window.matches = matches;
   if(existsCP){
     //dealling with copattern
-    //make a codata, the constructor should be accessible in self
+    //make a codata, the constructor(e.g.: qjf$codata$Stream) should be accessible in self
+    //the observers have the form: e.g.: qjf$obsvr$Stream$head
 
   }else{
     return eval("(function(matches){\n"+
