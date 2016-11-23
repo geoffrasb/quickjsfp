@@ -261,7 +261,7 @@ function CPattern(observer, innerPattern){
   checkArrayType(patterns,[IPattern, CPattern],'innerPattern','CPattern');
 
   this.observer = observer;
-  this.patterns = patterns;
+  this.innerPattern = innerPattern;
 }
 
 function WholePattern(inp){
