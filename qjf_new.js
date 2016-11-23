@@ -685,7 +685,7 @@ allparsers = /*
           function(n, ps, t, r) {
                 var obsvs = [];
                       for(var i=0;i<r.type.keytypes.length;i++){
-                        obsvs.push(new Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
+                        obsvs.push(new qjf$Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
                       }
                 return new Codata(n,ps,t,obsvs);
                 },
@@ -1794,41 +1794,80 @@ function makeMatches(self,pat_cb_args){
 // creates codata constructor and observers
 // codata constructor: qjf$codata$CodataName
 // observer: qjf$obsvr$CodataName$
-// function codata(decstr){
-//   var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
+//meta programming example:
+  // function qjf$codata$Stream(d,obsvr_matches){
+  //   checkType(obsvr_matches, Object, 'obsvr_matches', 'qjf$codata$Stream');
+  //   for(var k in obsvr_matches){
+  //     checkArrayType(obsvr_matches[k], Match, 'obsvr_matches['+k+']', 'qjf$codata$Stream');
+  //   }
+  //   //generate matching function for each observer
+  //   for(var k in obsvr_matches){
+
+  //     this.qjf$obsvr$Stream$head = (function(k){
+  //       function(){
+  //         var res;
+  //         for(var i=0;i<obsvr_matches[k].length;i++){
+  //           res = obsvr_matches[k][i].matchData(d);
+  //           if(res[0])
+  //             return res[1];
+  //         }
+  //       }
+  //     })(k);
+  //   }
+  // }
+function codata(decstr){
+  var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
 
   
-//   var codatacnstr = 
-//     function qjf$codata$Stream(matches){
-//       checkArrayType(matches, Match, 'matches', 'qjf$codata$Stream');
-//       this.qjf$obsvr$Stream$head = function(genVars(matches.length).split(',')){
-//         var res;
-//         for(var i=0;i<matches.length;i++){
-//           res = matches[i].matchData
-//         }
-//       }
-//     }
+  var codatacnstr = //obsvr_matches ex: {obsvr1 : matches,...}
+    eval("(\n"+
+    "function qjf$codata$"+prs.name.text+"(d,obsvr_matches){\n"+
+    "  checkType(obsvr_matches, Object, 'obsvr_matches', 'qjf$codata$"+prs.name.text+"');\n"+
+    "  for(var k in obsvr_matches){\n"+
+    "    checkArrayType( obsvr_matches[k]\n"+
+    "                  , Match\n"+
+    "                  , 'obsvr_matches['+k+']'\n"+
+    "                  , 'qjf$codata$"+prs.name.text+"');\n"+
+    "  }\n"+
+      //generate matching function for each observer
+     
+    "  for(var k in obsvr_matches){\n"+
 
-//   var obsvrs = {};
-//   for(var i=0;i<prs.observers.length;i++){
-//     obsvrs[prs.observers[i]] = (function(i){
-//       return function(x){
-//         checkType( x
-//                  , eval('(qjf$codata$'+prs.name.text+')')
-//                  , 'x'
-//                  , prs.observers[i]);
-//         return x['qjf$obsvr$'+prs.name.text+'$'+prs.obervsers[i]]();
-//       }
-//     })(i);
-//   }
+    "    this['qjf$obsvr$"+prs.name.text+"$'+k] = (function(k){\n"+
+    "      return function(){\n"+
+    "            var res;\n"+
+    "            for(var i=0;i<obsvr_matches[k].length;i++){\n"+
+    "              res = obsvr_matches[k][i].matchData(d);\n"+
+    "              if(res[0])\n"+
+    "                return res[1];\n"+
+    "            }\n"+
+    "      }\n"+
+    "    })(k);\n"+
+    "  }\n"+
+     
+    "}\n"+
+    ")")
+
+  var obsvrs = {};
+  for(var i=0;i<prs.observers.length;i++){
+    obsvrs[prs.observers[i]] = (function(i){
+      return function(x){
+        checkType( x
+                 , eval('(qjf$codata$'+prs.name.text+')')
+                 , 'x'
+                 , prs.observers[i]);
+        return x['qjf$obsvr$'+prs.name.text+'$'+prs.obervsers[i]]();
+      }
+    })(i);
+  }
   
 
 
-//   return { typename: prs.name.text
-//          , codatacnstr:
-//          , obsvrs: obsvrs
-//          }
-// }
+  return { typename: prs.name.text
+         , codatacnstr: codatacnstr
+         , obsvrs: obsvrs
+         }
+}
 function evCodata(decstr){
 }
 
