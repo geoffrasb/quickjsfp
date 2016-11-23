@@ -68,12 +68,15 @@ CPattern = o:Name _ '*' {
      / o:Name _ '(' _ '*' _ ps:Patterns _ ')' {
              return new CPattern(o.text=='_'? insDontCare : o , ps)
            }
+         / o:Name _ '(' _ cp:CPattern _ ')' {
+           return new CPattern(o.text=='_'? insDontCare : o, cp);
+         }
 
 
 CodataDecl = n:Name _ ps:RecParams _ ':' _ t:Type _ '=' _ r:RecordTypeDecl{
       var obsvs = [];
             for(var i=0;i<r.type.keytypes.length;i++){
-              obsvs.push(new Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
+              obsvs.push(new qjf$Observer(r.type.keytypes[i][0], r.type.keytypes[i][1]));
             }
       return new Codata(n,ps,t,obsvs);
       }
@@ -106,7 +109,7 @@ DataParams =  &(_ ':') {return []}
               }
 DataRight = !. {return []} 
       / cs:Constructors {return cs}
-Constructors = c:Name _ ':' _ ct:Type _ !. {return [new Constructor(c,ct)];}
+Constructors = c:Name _ ':' _ ct:Type _ !. {return [new qjf$Constructor(c,ct)];}
       /  c:Name _ ':' _ ct:Type _ '|' _ cs:Constructors {
                  cs.unshift(new Constructor(c,ct))
                  return cs;
