@@ -258,7 +258,9 @@ function IPattern(inp){
 
 function CPattern(observer, innerPattern){
   checkType(observer, [DontCare, Name], 'observer', 'CPattern');
-  checkArrayType(patterns,[IPattern, CPattern],'innerPattern','CPattern');
+  checkType(innerPattern, [Array, CPattern], 'innerPattern', 'CPattern');
+  if(innerPattern.constructor === Array)
+    checkArrayType(innerPattern, IPattern, 'innerPattern', 'CPattern');
 
   this.observer = observer;
   this.innerPattern = innerPattern;
