@@ -5,9 +5,8 @@
 
 
 
-
-WholePattern = ps:Patterns {return new WholePattern(ps)}
-       / cp:CPattern {return new WholePattern(cp)}
+WholePattern = !([^*]* '*') ps:Patterns {return new WholePattern(ps)}
+       / &([^*]* '*') cp:CPattern {return new WholePattern(cp)}
 
 Patterns = p:IPattern _ ps:Patterns_ {ps.unshift(p); return ps}
 Patterns_ = (!. / &ImpossibleLeadings) {return []}
@@ -111,7 +110,7 @@ DataRight = !. {return []}
       / cs:Constructors {return cs}
 Constructors = c:Name _ ':' _ ct:Type _ !. {return [new qjf$Constructor(c,ct)];}
       /  c:Name _ ':' _ ct:Type _ '|' _ cs:Constructors {
-                 cs.unshift(new Constructor(c,ct))
+                 cs.unshift(new qjf$Constructor(c,ct))
                  return cs;
                }
 
