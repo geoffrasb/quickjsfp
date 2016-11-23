@@ -1816,6 +1816,7 @@ function makeMatches(self,pat_cb_args){
   //   }
   // }
 function codata(decstr){
+  checkType(decstr, String, 'decstr', 'codata');
   var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
 
   
@@ -1868,7 +1869,17 @@ function codata(decstr){
          , obsvrs: obsvrs
          }
 }
-function evCodata(decstr){
+
+//self is expected to be given `this`
+function evCodata(self,decstr){
+  checkType(self, [Object,Window], 'self', 'evCodata');
+  checkType(decstr, String, 'decstr', 'evCodata');
+
+  var cd = codata(decstr);
+  self[cd.codatacnstr.name] = cd.codatacnstr;
+  for(var k in cd.obsvrs){
+    self[k] = cd.obsvrs[k];
+  }
 }
 
 
