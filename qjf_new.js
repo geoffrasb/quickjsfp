@@ -1977,6 +1977,14 @@ function func(self,type,args){
     //make a codata, the constructor(e.g.: qjf$codata$Stream) should be accessible in self
     //the observers have the form: e.g.: qjf$obsvr$Stream$head
 
+    //categorize matches
+
+    //make sure all copatterns belong to the same codata
+    for(var i=0;i<matches.length;i++){
+      checkType(matches[i].pat, CPattern, 'matches['+i+'].pat', 'func');
+      matches[i].observer
+    }
+
   }else{
     return eval("(function(matches){\n"+
 
