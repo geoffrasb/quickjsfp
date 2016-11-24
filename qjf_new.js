@@ -1778,6 +1778,26 @@ function Match(self, patsrc, callback){
   }
 }
 
+function openCPattern(match,num){
+  checkType(match, Match, 'match', 'openCPattern');
+  if(match.pat.constructor != CPattern)
+    match.isCopattern = false;
+    return match;
+  else{
+    if(typeof(num)!='undefined' && num.constructor === Number){
+      if(num>0){
+        match.pat = match.pat.innerPattern;
+        return openCPattern(match,num-1);
+      }else{
+        return match;
+      }
+    }else{
+      match.pat = match.pat.innerPattern;
+      return openCPattern(match);
+    }
+  }
+}
+
 function makeMatches(self,pat_cb_args){
   if(pat_cb_args.length<2 || pat_cb_args.length%2!=0)
     throw "makeMatches: wrong pat_cb_args length which should be in even number and at least 2."
@@ -2013,7 +2033,11 @@ function splitMatches(self,matches){
 }
 
 
+function coind(self,pat_args){
+  checkType(self, [Object, Window], 'self', 'coind');
 
+  var matches = makeMatches(self, Array.from(arguments).slice(1));
+}
 
 
 //self is expected given `this`, in which available constructors are held.
