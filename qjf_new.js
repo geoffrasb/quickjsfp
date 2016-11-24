@@ -1859,7 +1859,7 @@ function codata(decstr){
 
   var obsvrs = {};
   for(var i=0;i<prs.observers.length;i++){
-    
+
     codatacnstr.allObservers.push(prs.observers[i].name.text);
 
     obsvrs[prs.observers[i].name.text] = (function(i){
@@ -1961,6 +1961,58 @@ var REC = {}//function(self){return recHelper.apply(self,arguments)}
 // }
 
 
+function splitMatches(self,matches){
+  checkArrayType(self, [Object, Window], 'self', 'splitMatches');
+  checkArrayType(matches, Match, 'matches', 'splitMatches');
+
+  var existsCP = matches[0].isCopattern;
+  for(var i=1;i<matches.length;i++){
+    if(existsCP && matches[i].isCopattern)
+      throw 'func: copatterns and patterns cannot be mixed.'
+    existsCP = matches[i].isCopattern;
+  }
+  if(!existsCP)
+    return false
+
+  var constructingCodata = "";
+  var theCodataCnstr = null;
+  var toFeedCnstr = null;
+
+  for(var i=0;i<matches.length;i++){
+
+    //presettings and checkings
+    checkType(matches[i].pat, CPattern, 'matches['+i+'].pat', 'func');
+
+    if(matches[i].observer.constructor != DontCare){
+      var obsvrName = matches[i].observer.name.text;
+      if( constructingCodata!="" 
+        && self[obsvrName].qjf$obsvr_of != constructingCodata
+        ){
+        throw 'func: observers for different codatas shouldn\'t be mixed.'
+      }
+      constructingCodata = self[obsvrName].qjf$obsvr_of;
+      theCodataCnstr = theCodataCnstr!=null? theCodataCnstr : self['qjf$codata$'+constructingCodata];
+      if(toFeedCnstr==null){
+        toFeedCnstr = {};
+        for(var j=0;j<theCodataCnstr.allObservers.length;j++){
+          toFeedCnstr[theCodataCnstr.allObservers[j]] = [];
+        }
+      }
+
+      //finished presettings and checkings, then put the match into the right bucket
+      toFeedCnstr[obsvrName].push(matches[i]);
+
+    }else{
+      //observer is DontCare, the match should give to every bucket
+      for(var k in toFeedCnstr){
+        toFeedCnstr[k].push(matches[i]);
+      }
+    }
+  }
+  return [theCodataCnstr, toFeedCnstr]
+}
+
+
 
 
 
@@ -1976,38 +2028,15 @@ function func(self,type,args){
 
   var matches = makeMatches(self, Array.from(arguments).slice(2));
   //check if all of the matches are copattern
-  var existsCP = matches[0].isCopattern;
-  for(var i=1;i<matches.length;i++){
-    if(existsCP && matches[i].isCopattern)
-      throw 'func: copatterns and patterns cannot be mixed.'
-    existsCP = matches[i].isCopattern;
-  }
-  window.matches = matches;
-  if(existsCP){
+  var splitRes = splitMatches(self,matches);
+  if(splitRes.constructor === Array){
+    // splitRes[0] is the codata constructor
+    // splitRes[1] is input for codata constructor, when input data of the function is given
     //dealling with copattern
     //make a codata, the constructor(e.g.: qjf$codata$Stream) should be accessible in self
     //the observers have the form: e.g.: qjf$obsvr$Stream$head
 
-    //categorize matches
-
-    //make sure all copatterns belong to the same codata
-    var constructingCodata = "";
-    var toFeedCnstr = {};
-    for(var i=0;i<matches.length;i++){
-      checkType(matches[i].pat, CPattern, 'matches['+i+'].pat', 'func');
-
-      if(matches[i].observer.constructor != DontCare){
-        var obsvrName = matches[i].observer.name.text;
-        if( typeof(self[obsvrName]) == 'undefined'
-          || typeof(self[obsvrName].qjf$obsvr_of) == 'undefined' //the field defined in codata
-          || (constructingCodata!="" && self[obsvrName].qjf$obsvr_of != constructingCodata)
-          ){
-          throw 'func: observers for different codatas shouldn\'t be mixed.'
-        }
-      }else{
-        //observer is DontCare
-      }
-    }
+    throw "not handling with codata currently"
 
   }else{
     return eval("(function(matches){\n"+
