@@ -1855,9 +1855,13 @@ function codata(decstr){
      
     "}\n"+
     ")")
+  codatacnstr.allObservers = [];
 
   var obsvrs = {};
   for(var i=0;i<prs.observers.length;i++){
+    
+    codatacnstr.allObservers.push(prs.observers[i].name.text);
+
     obsvrs[prs.observers[i].name.text] = (function(i){
       var res = function(x){
         checkType( x
@@ -1987,9 +1991,22 @@ function func(self,type,args){
     //categorize matches
 
     //make sure all copatterns belong to the same codata
+    var constructingCodata = "";
+    var toFeedCnstr = {};
     for(var i=0;i<matches.length;i++){
       checkType(matches[i].pat, CPattern, 'matches['+i+'].pat', 'func');
-      matches[i].observer
+
+      if(matches[i].observer.constructor != DontCare){
+        var obsvrName = matches[i].observer.name.text;
+        if( typeof(self[obsvrName]) == 'undefined'
+          || typeof(self[obsvrName].qjf$obsvr_of) == 'undefined' //the field defined in codata
+          || (constructingCodata!="" && self[obsvrName].qjf$obsvr_of != constructingCodata)
+          ){
+          throw 'func: observers for different codatas shouldn\'t be mixed.'
+        }
+      }else{
+        //observer is DontCare
+      }
     }
 
   }else{
