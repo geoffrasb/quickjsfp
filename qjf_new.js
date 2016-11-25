@@ -1780,10 +1780,10 @@ function Match(self, patsrc, callback){
 
 function openCPattern(match,num){
   checkType(match, Match, 'match', 'openCPattern');
-  if(match.pat.constructor != CPattern)
+  if(match.pat.constructor != CPattern){
     match.isCopattern = false;
     return match;
-  else{
+  }else{
     if(typeof(num)!='undefined' && num.constructor === Number){
       if(num>0){
         match.pat = match.pat.innerPattern;
@@ -1798,7 +1798,111 @@ function openCPattern(match,num){
   }
 }
 
-function makeMatches(self,pat_cb_args){
+//Warning: if matches are copatterns, it will be altered(by openCPattern).
+//returns: [the codata cnstr, {obsvr : matches}]
+function splitMatches(self,matches){
+  checkArrayType(self, [Object, Window], 'self', 'splitMatches');
+  checkArrayType(matches, Match, 'matches', 'splitMatches');
+
+  var existsCP = matches[0].isCopattern;
+  for(var i=1;i<matches.length;i++){
+    if(existsCP && matches[i].isCopattern)
+      throw 'splitMatches: copatterns and patterns cannot be mixed.'
+    existsCP = matches[i].isCopattern;
+  }
+  if(!existsCP)
+    return false
+
+  var constructingCodata = "";
+  var theCodataCnstr = null;
+  var toFeedCnstr = null;
+
+  for(var i=0;i<matches.length;i++){
+
+    //presettings and checkings
+    checkType(matches[i].pat, CPattern, 'matches['+i+'].pat', 'func');
+
+    if(matches[i].observer.constructor != DontCare){
+      var obsvrName = matches[i].observer.name.text;
+      if( constructingCodata!="" 
+        && self[obsvrName].qjf$obsvr_of != constructingCodata
+        ){
+        throw 'func: observers for different codatas shouldn\'t be mixed.'
+      }
+      constructingCodata = self[obsvrName].qjf$obsvr_of;
+      theCodataCnstr = theCodataCnstr!=null? theCodataCnstr : self['qjf$codata$'+constructingCodata];
+      if(toFeedCnstr==null){
+        toFeedCnstr = {};
+        for(var j=0;j<theCodataCnstr.allObservers.length;j++){
+          toFeedCnstr[theCodataCnstr.allObservers[j]] = [];
+        }
+      }
+
+      //finished presettings and checkings, then put the match into the right bucket
+      toFeedCnstr[obsvrName].push(matches[i]);
+
+    }else{
+      //observer is DontCare, the match should give to every bucket
+      for(var k in toFeedCnstr){
+        toFeedCnstr[k].push(openCPattern(matches[i],1));
+      }
+    }
+  }
+  return [theCodataCnstr, toFeedCnstr]
+}
+
+function Matches(self, d, matches, originalPatterns, value){
+  checkType(self, [Object, Window], 'self', 'Matches');
+  checkArrayType(matches, Match, 'matches', 'Matches');
+  checkArrayType(originalPatterns, String, 'originalPatterns', 'Matches');
+
+  var patternType = "";
+  if(matches.length > 0){
+    if(matches[0].isCopattern)
+      patternType = 'copattern';
+    else
+      patternType = 'pattern';
+  }else if(typeof(value)=='undefined'){
+    throw 'Matches: no match was given but neither was value.'
+  }else{
+    patternType = 'valueAlready';
+  }
+
+  this.data = d;
+  this.originalPatterns = originalPatterns;
+  this.matches = matches;
+  this.patternType = patternType; //copattern | pattern | valueAlready
+  this.value = typeof(value)=='undefined'? value : null;
+  this.yield = function(){
+    try{
+      switch(this.patternType){
+        case 'valueAlready':
+          return this.value;
+        case 'pattern':
+          var mat = null;
+          for(var i=0;i<matches.length;i++){    
+            mat = matches[i].matchData(this.data);
+            if(mat[0])
+              return mat[1];
+          }
+          throw 'No pattern matched.';
+        case 'copattern':
+          var sp = splitMatches(self, this.matches);
+          //should return a codata
+        default:
+          throw 'impossible case reached.';
+      }
+    }catch(e){
+      throw e+'\nGiven data:'+this.data.toString()+'\npatterns:\n\t'+originalPatterns.join('\n\t');
+    }
+  }
+    //copattern -> [the codata cnstr, {obsvr : Matches}]
+    //pattern -> value
+    //valuealready
+}
+
+//value is only needed when it's working on coinduction
+function makeMatches(self,d,pat_cb_args,value){
   if(pat_cb_args.length<2 || pat_cb_args.length%2!=0)
     throw "makeMatches: wrong pat_cb_args length which should be in even number and at least 2."
   for(var x = 0;x<pat_cb_args.length/2;x++){
@@ -1807,10 +1911,12 @@ function makeMatches(self,pat_cb_args){
   }
 
   var res = [];
+  var pats = [];
   for(var x = 0;x<pat_cb_args.length/2;x++){
+    pats.push(pat_cb_args[x*2]);
     res.push(new Match(self,pat_cb_args[x*2],pat_cb_args[x*2+1]));
   }
-  return res;
+  return new Matches(self,d,res,pats,value);
 }
 
 
@@ -1842,6 +1948,11 @@ function makeMatches(self,pat_cb_args){
   //     })(k);
   //   }
   // }
+
+//new codata constructor interface:
+//input: {obsvr: [true, x] } 
+//input: {obsvr: [false, data, matches]}
+
 function codata(decstr){
   checkType(decstr, String, 'decstr', 'codata');
   var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
@@ -1932,18 +2043,27 @@ function cases(self,d,args){
 
   checkType(self,[Object,Window],'self','cases');
 
-  var matches = makeMatches(self,Array.from(arguments).slice(2));
-  for(var i = 0; i<matches.length; i++){
-    if(matches[i].isCopattern)
+  var matches = makeMatches(self,d,Array.from(arguments).slice(2));
+  switch(matches.patternType == 'copattern'){
+    case 'copattern':
       throw "copatterns can only be used in func."
-
-    var mr = matches[i].matchData([d]);
-    if(mr[0]){
-      return mr[1];
-    }
-
+    case 'pattern':
+      return matches.yield();
+    case 'valueAlready':
+    default:
+      throw 'cases: reached impossible case.'
   }
-  throw 'cases: no pattern matched'
+  // for(var i = 0; i<matches.length; i++){
+  //   if(matches[i].isCopattern)
+  //     throw "copatterns can only be used in func."
+
+  //   var mr = matches[i].matchData([d]);
+  //   if(mr[0]){
+  //     return mr[1];
+  //   }
+
+  // }
+  // throw 'cases: no pattern matched'
 }
 
 
@@ -1981,62 +2101,16 @@ var REC = {}//function(self){return recHelper.apply(self,arguments)}
 // }
 
 
-function splitMatches(self,matches){
-  checkArrayType(self, [Object, Window], 'self', 'splitMatches');
-  checkArrayType(matches, Match, 'matches', 'splitMatches');
 
-  var existsCP = matches[0].isCopattern;
-  for(var i=1;i<matches.length;i++){
-    if(existsCP && matches[i].isCopattern)
-      throw 'func: copatterns and patterns cannot be mixed.'
-    existsCP = matches[i].isCopattern;
-  }
-  if(!existsCP)
-    return false
-
-  var constructingCodata = "";
-  var theCodataCnstr = null;
-  var toFeedCnstr = null;
-
-  for(var i=0;i<matches.length;i++){
-
-    //presettings and checkings
-    checkType(matches[i].pat, CPattern, 'matches['+i+'].pat', 'func');
-
-    if(matches[i].observer.constructor != DontCare){
-      var obsvrName = matches[i].observer.name.text;
-      if( constructingCodata!="" 
-        && self[obsvrName].qjf$obsvr_of != constructingCodata
-        ){
-        throw 'func: observers for different codatas shouldn\'t be mixed.'
-      }
-      constructingCodata = self[obsvrName].qjf$obsvr_of;
-      theCodataCnstr = theCodataCnstr!=null? theCodataCnstr : self['qjf$codata$'+constructingCodata];
-      if(toFeedCnstr==null){
-        toFeedCnstr = {};
-        for(var j=0;j<theCodataCnstr.allObservers.length;j++){
-          toFeedCnstr[theCodataCnstr.allObservers[j]] = [];
-        }
-      }
-
-      //finished presettings and checkings, then put the match into the right bucket
-      toFeedCnstr[obsvrName].push(matches[i]);
-
-    }else{
-      //observer is DontCare, the match should give to every bucket
-      for(var k in toFeedCnstr){
-        toFeedCnstr[k].push(matches[i]);
-      }
-    }
-  }
-  return [theCodataCnstr, toFeedCnstr]
-}
 
 
 function coind(self,pat_args){
   checkType(self, [Object, Window], 'self', 'coind');
 
   var matches = makeMatches(self, Array.from(arguments).slice(1));
+  var sp = splitMatches(self, matches);
+  if(sp == false)
+    throw 'coind: no copatterns'
 }
 
 
@@ -2050,42 +2124,64 @@ function func(self,type,args){
   var ptype = allparsers.parse(type, {startRule : 'Type'});
   var arity = countArity(ptype);
 
-  var matches = makeMatches(self, Array.from(arguments).slice(2));
-  //check if all of the matches are copattern
-  var splitRes = splitMatches(self,matches);
-  if(splitRes.constructor === Array){
-    // splitRes[0] is the codata constructor
-    // splitRes[1] is input for codata constructor, when input data of the function is given
-    //dealling with copattern
-    //make a codata, the constructor(e.g.: qjf$codata$Stream) should be accessible in self
-    //the observers have the form: e.g.: qjf$obsvr$Stream$head
+  return eval("(function(oriArgs){"+
+    "return function("+genVars(arity).join(',')+"){\n"+
+    "  checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+
+    "  return Y(function(rec){\n"+
+    "    REC = rec;\n"+
+    //----
+    "    return function("+genVars(arity).join(',')+"){\n"+
+    "      var matches = makeMatches(self, Array.from(arguments), oriArgs.slice(2));\n"+
+    "      switch(matches.patternType){\n"+
+    "        case 'pattern':\n"+
+    "          return matches.yield();\n"+
+    "        case 'copattern':\n"+
+                //todo
+    "        default:\n"+
+    "          throw 'func: reached impossible case.'\n"+
+    "      }\n"+
+    "    }\n"+
+    //----
+    "  })("+genVars(arity).join(',')+");\n"+
+    "})")(Array.from(arguments));
 
-    throw "not handling with codata currently"
+  //var matches = makeMatches(self, Array.from(arguments).slice(2));
 
-  }else{
-    return eval("(function(matches){\n"+
+  // //check if all of the matches are copattern
+  // var splitRes = splitMatches(self,matches);
+  // if(splitRes.constructor === Array){
+  //   // splitRes[0] is the codata constructor
+  //   // splitRes[1] is input for codata constructor, when input data of the function is given
+  //   //dealling with copattern
+  //   //make a codata, the constructor(e.g.: qjf$codata$Stream) should be accessible in self
+  //   //the observers have the form: e.g.: qjf$obsvr$Stream$head
 
-      "return function("+genVars(arity).join(',')+"){\n"+
-      "  checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+
-      "  return Y(function(rec){\n"+
-      "    REC = rec;\n"+
-          //---
-      "    return function("+genVars(arity).join(',')+"){\n"+
-      "      for(var i=0;i<matches.length;i++){\n"+
-      "        var res = matches[i].matchData(Array.from(arguments));\n"+
-      "        if(res[0])\n"+
-      "          return res[1];\n"+
-      "      }\n"+
-      "      throw 'no pattern matched'\n"+
-      "    }\n"+
-          //----
-      "  })("+genVars(arity).join(',')+");\n"+
-      "}\n"+
+  //   throw "not handling with codata currently"
+
+  // }else{
+  //   return eval("(function(matches){\n"+
+
+  //     "return function("+genVars(arity).join(',')+"){\n"+
+  //     "  checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+
+  //     "  return Y(function(rec){\n"+
+  //     "    REC = rec;\n"+
+  //         //---
+  //     "    return function("+genVars(arity).join(',')+"){\n"+
+  //     "      for(var i=0;i<matches.length;i++){\n"+
+  //     "        var res = matches[i].matchData(Array.from(arguments));\n"+
+  //     "        if(res[0])\n"+
+  //     "          return res[1];\n"+
+  //     "      }\n"+
+  //     "      throw 'no pattern matched'\n"+
+  //     "    }\n"+
+  //         //----
+  //     "  })("+genVars(arity).join(',')+");\n"+
+  //     "}\n"+
 
 
 
-    "})")(matches)
-  }
+  //   "})")(matches)
+  // }
 }
 
 
