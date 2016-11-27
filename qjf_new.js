@@ -1816,6 +1816,7 @@ function splitMatches(self,matches){
   var constructingCodata = "";
   var theCodataCnstr = null;
   var toFeedCnstr = null;
+  var allObservers = null;
 
   for(var i=0;i<matches.length;i++){
 
@@ -1868,11 +1869,12 @@ function Matches(self, d, matches, originalPatterns, value){
     patternType = 'valueAlready';
   }
 
+  this.self = self;
   this.data = d;
   this.originalPatterns = originalPatterns;
   this.matches = matches;
   this.patternType = patternType; //copattern | pattern | valueAlready
-  this.value = typeof(value)=='undefined'? value : null;
+  this.value = typeof(value)=='undefined'? null : value;
   this.yield = function(){
     try{
       switch(this.patternType){
@@ -1882,20 +1884,15 @@ function Matches(self, d, matches, originalPatterns, value){
           var mat = null;
           for(var i=0;i<matches.length;i++){    
             mat = matches[i].matchData(this.data);
-            if(mat[0])
-              return mat[1];
+            if(mat[0]){
+              this.patternType = 'valueAlready';
+              this.value = mat[1];
+              return this.value;
+            }
           }
           throw 'No pattern matched.';
         case 'copattern':
-          throw 'not support copattern yet'
-          var sp = splitMatches(self, this.matches);
-          //should return a codata
-          // need to find the codata constructor
-          // the point is, what happens when an obsvr is encountered
-          //if there's only one layer of copattern:
-          //  yeild returns the codata, of which the observers return pure values
-          //if there's multiple layers,
-          //  yeild returns the codata, of which the observers return codatas ...
+          throw 'cannot yield value from copattern'
         default:
           throw 'impossible case reached.';
       }
@@ -1906,6 +1903,20 @@ function Matches(self, d, matches, originalPatterns, value){
     //copattern -> [the codata cnstr, {obsvr : Matches}]
     //pattern -> value
     //valuealready
+}
+
+function seeCodataCnstrOfMatches(matches){
+  checkType(matches, Matches, 'matches', 'seeCodataCnstrOfMatches');
+  checkValue(matches.patternType, 'copattern', 'matches.patternType', 'seeCodataCnstrOfMatches');
+  for(var i=0;i<matches.matches.length;i++){
+    if(matches.matches[i].pat.observer.constructor != DontCare){
+      var obsvr = matches.self[matches.matches[i].pat.observer.name.text];
+      var ccnstr = obsvr();
+      if(/^qjf\$codata\$/.test(ccnstr.name))
+        return ccnstr;
+    }
+  }
+  throw 'failed finding codata constructor'
 }
 
 //value is only needed when it's working on coinduction
@@ -1956,16 +1967,96 @@ function makeMatches(self,d,pat_cb_args,value){
   //   }
   // }
 
-//new codata constructor interface:
-//input: {obsvr: [true, x] } 
-//input: {obsvr: [false, data, matches]}
 
 function codata(decstr){
   checkType(decstr, String, 'decstr', 'codata');
   var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
 
+  var codataName = prs.name.text;
+  var cnstrName = 'qjf$codata$'+codataName;
+  var obsvrList = [];
+  for(var i=0;i<prs.observers.length;i++){
+    obsvrList.push(prs.observers[i].name.text);
+  }
+  //var obsvrPreName = 'qjf$obsvr$'+codataName+'$';
+
+  //execute observer w/o giving input will return the codata constructor
+  function makeObsvrFunc(obsvrN, cnstr){
+    return function(x){
+      if(typeof(x)=='undefined')
+        return cnstr;
+      checkType(x, cnstr, 'x', obsvrN);
+      return x[obsvrN]();
+    }
+  }
+
+  function splitMatches(mtcs){ //Matches -> {obsvr : Matches}
+    var res = {};
+    for(var i=0;i<mtcs.matches.length;i++){
+      checkType(mtcs.matches[i].pat, CPattern, 'mtcs.matches['+i+']','splitMatches');
+      switch(mtcs.matches[i].pat.observer.constructor){
+        case DontCare:
+          obsvrList.forEach(function(on){res[on] = mtcs.matches[i].innerPattern});
+          break;
+        case Name:
+          var x = obsvrList.indexOf(mtcs.matches[i].pat.text);
+          if( x === -1){
+            throw 'splitMatches: exists observer('+
+                  mtcs.matches[i].pat.text+') that doesn\'t belong to '+codataName;
+          }
+          res[obsvrList[x]] = mtcs.matches[i].innerPattern;
+          break;
+        default:
+          throw 'splitMatches: impossible case has been reached'
+      }
+    }
+    for(var k in res){
+      if(mtcs.value == null)
+        res[k] = new Matches(mtcs.self, mtcs.data, mtcs.originalPatterns);
+      else
+        res[k] = new Matches(mtcs.self, mtcs.data, mtcs.originalPatterns, mtcs.value);
+    }
+    return res;
+  }
+
+
   var codatacnstr = {};
-    //function qjf$codata$Stream(Matches)
+    function qjf$codata$Stream(matches){
+      //If the constructor is used as a function (without giving any iniput), 
+      // return observers table.
+      var obsvrs = null;
+      if(typeof(matches)=='undefined'){
+        if(obsvrs != null)
+          return obsvrs;
+        obsvrs = {};
+        obsvrList.forEach(function(on){
+          obsvrs[on] = makeObsvrFunc(on,eval(cnstrName));
+        });
+        return obsvrs;
+      }
+
+      checkType(matches, Matches, 'matches', cnstrName);
+      if(matches.patternType != 'copattern')
+        throw cnstrName+': input matches are not copatterns'
+
+      //splitting the matches
+      var split = splitMatches(matches);
+
+      obsvrList.forEach(function(on){
+        if(typeof(split[on])=='undefined')
+          console.log('Warning: no case for the observer: '+on);
+        else{
+          this[on] = (function(){
+            return function(){
+              if(split[on].patternType == 'copattern'){
+              }else{
+                return split[on].yield();
+              }
+            }
+          })(on);
+        }
+      });
+    }
   // var codatacnstr = //obsvr_matches ex: {obsvr1 : matches,...}
   //   eval("(\n"+
   //   "function qjf$codata$"+prs.name.text+"(d,obsvr_matches){\n"+
@@ -1994,31 +2085,11 @@ function codata(decstr){
      
   //   "}\n"+
   //   ")")
-  codatacnstr.allObservers = [];
-
-  var obsvrs = {};
-  for(var i=0;i<prs.observers.length;i++){
-
-    codatacnstr.allObservers.push(prs.observers[i].name.text);
-
-    obsvrs[prs.observers[i].name.text] = (function(i){
-      var res = function(x){
-        checkType( x
-                 , eval('(qjf$codata$'+prs.name.text+')')
-                 , 'x'
-                 , prs.observers[i].name.text);
-        return x['qjf$obsvr$'+prs.name.text+'$'+prs.obervsers[i].name.text]();
-      }
-      res.qjf$obsvr_of = prs.name.text;
-      return res;
-    })(i);
-  }
   
 
 
   return { typename: prs.name.text
          , codatacnstr: codatacnstr
-         , obsvrs: obsvrs
          }
 }
 
