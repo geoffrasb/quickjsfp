@@ -1887,8 +1887,15 @@ function Matches(self, d, matches, originalPatterns, value){
           }
           throw 'No pattern matched.';
         case 'copattern':
+          throw 'not support copattern yet'
           var sp = splitMatches(self, this.matches);
           //should return a codata
+          // need to find the codata constructor
+          // the point is, what happens when an obsvr is encountered
+          //if there's only one layer of copattern:
+          //  yeild returns the codata, of which the observers return pure values
+          //if there's multiple layers,
+          //  yeild returns the codata, of which the observers return codatas ...
         default:
           throw 'impossible case reached.';
       }
@@ -1957,35 +1964,36 @@ function codata(decstr){
   checkType(decstr, String, 'decstr', 'codata');
   var prs = allparsers.parse(decstr.trim(), {startRule : 'CodataDecl'});
 
-  
-  var codatacnstr = //obsvr_matches ex: {obsvr1 : matches,...}
-    eval("(\n"+
-    "function qjf$codata$"+prs.name.text+"(d,obsvr_matches){\n"+
-    "  checkType(obsvr_matches, Object, 'obsvr_matches', 'qjf$codata$"+prs.name.text+"');\n"+
-    "  for(var k in obsvr_matches){\n"+
-    "    checkArrayType( obsvr_matches[k]\n"+
-    "                  , Match\n"+
-    "                  , 'obsvr_matches['+k+']'\n"+
-    "                  , 'qjf$codata$"+prs.name.text+"');\n"+
-    "  }\n"+
-      //generate matching function for each observer
+  var codatacnstr = {};
+    //function qjf$codata$Stream(Matches)
+  // var codatacnstr = //obsvr_matches ex: {obsvr1 : matches,...}
+  //   eval("(\n"+
+  //   "function qjf$codata$"+prs.name.text+"(d,obsvr_matches){\n"+
+  //   "  checkType(obsvr_matches, Object, 'obsvr_matches', 'qjf$codata$"+prs.name.text+"');\n"+
+  //   "  for(var k in obsvr_matches){\n"+
+  //   "    checkArrayType( obsvr_matches[k]\n"+
+  //   "                  , Match\n"+
+  //   "                  , 'obsvr_matches['+k+']'\n"+
+  //   "                  , 'qjf$codata$"+prs.name.text+"');\n"+
+  //   "  }\n"+
+  //     //generate matching function for each observer
      
-    "  for(var k in obsvr_matches){\n"+
+  //   "  for(var k in obsvr_matches){\n"+
 
-    "    this['qjf$obsvr$"+prs.name.text+"$'+k] = (function(k){\n"+
-    "      return function(){\n"+
-    "            var res;\n"+
-    "            for(var i=0;i<obsvr_matches[k].length;i++){\n"+
-    "              res = obsvr_matches[k][i].matchData(d);\n"+
-    "              if(res[0])\n"+
-    "                return res[1];\n"+
-    "            }\n"+
-    "      }\n"+
-    "    })(k);\n"+
-    "  }\n"+
+  //   "    this['qjf$obsvr$"+prs.name.text+"$'+k] = (function(k){\n"+
+  //   "      return function(){\n"+
+  //   "            var res;\n"+
+  //   "            for(var i=0;i<obsvr_matches[k].length;i++){\n"+
+  //   "              res = obsvr_matches[k][i].matchData(d);\n"+
+  //   "              if(res[0])\n"+
+  //   "                return res[1];\n"+
+  //   "            }\n"+
+  //   "      }\n"+
+  //   "    })(k);\n"+
+  //   "  }\n"+
      
-    "}\n"+
-    ")")
+  //   "}\n"+
+  //   ")")
   codatacnstr.allObservers = [];
 
   var obsvrs = {};
@@ -2115,6 +2123,7 @@ function coind(self,pat_args){
 
 
 //self is expected given `this`, in which available constructors are held.
+var recname = 'rec';
 function func(self,type,args){
   checkType(self, [Object,Window], 'self', 'func');
   checkType(type, String, 'type', 'funcs');
@@ -2124,25 +2133,28 @@ function func(self,type,args){
   var ptype = allparsers.parse(type, {startRule : 'Type'});
   var arity = countArity(ptype);
 
-  return eval("(function(oriArgs){"+
-    "return function("+genVars(arity).join(',')+"){\n"+
-    "  checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+
-    "  return Y(function(rec){\n"+
-    "    REC = rec;\n"+
+  return eval(
+    "(function(oriArgs){"+
+    "  return function("+genVars(arity).join(',')+"){\n"+
+    "    checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+
+    "    return Y(function(rec){\n"+
+    "      self."+recname+" = rec;\n"+
     //----
-    "    return function("+genVars(arity).join(',')+"){\n"+
-    "      var matches = makeMatches(self, Array.from(arguments), oriArgs.slice(2));\n"+
-    "      switch(matches.patternType){\n"+
-    "        case 'pattern':\n"+
-    "          return matches.yield();\n"+
-    "        case 'copattern':\n"+
+    "      return function("+genVars(arity).join(',')+"){\n"+
+    "        var matches = makeMatches(self, Array.from(arguments), oriArgs.slice(2));\n"+
+    "        switch(matches.patternType){\n"+
+    "          case 'pattern':\n"+
+    "            return matches.yield();\n"+
+    "          case 'copattern':\n"+
                 //todo
-    "        default:\n"+
-    "          throw 'func: reached impossible case.'\n"+
+    "            throw 'not supporting copattern yet'\n"+
+    "          default:\n"+
+    "            throw 'func: reached impossible case.'\n"+
+    "        }\n"+
     "      }\n"+
-    "    }\n"+
     //----
-    "  })("+genVars(arity).join(',')+");\n"+
+    "    })("+genVars(arity).join(',')+");\n"+
+    "  }\n"+
     "})")(Array.from(arguments));
 
   //var matches = makeMatches(self, Array.from(arguments).slice(2));
