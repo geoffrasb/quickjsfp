@@ -1830,7 +1830,9 @@ function checkMatches(context, ms){
         iscpat = patIsCP(p);
       else if(iscpat != patIsCP(p)){
         throw 'patterns and copatterns shouldn\'t be mixed'
-      }else if(patIsCP(p) && p.observer.constructor != DontCare){
+      }
+
+      if(patIsCP(p) && p.observer.constructor != DontCare){
 
         var obsv = context[p.observer.text];
 
@@ -1842,10 +1844,10 @@ function checkMatches(context, ms){
         }else if(  current_codatacnstr == null){
           
           current_codatacnstr = obsv();
-        }else if(codatacnstr != obsv()){
+        }else if(current_codatacnstr != obsv()){
           throw 'observers from different codata shouldn\'t be mixed'
         }else{
-          throw 'missed case in recForCPat'
+          //current_codatacnstr == obsv(), so do nothing
         }
       }else{
         //p is not copattern or p is copattern but is DontCare
@@ -1883,6 +1885,10 @@ function SafeMatches(context, d, matches, originalPatterns){
   this.matches = matches;
 }
 
+function splitMatches(mtcs){ //SafeMatches -> {obsvr : SafeMatches}
+  checkType(mtcs, SafeMatches, 'mtcs', 'splitMatches');
+
+}
 
 
 //value is only needed when it's working on coinduction
