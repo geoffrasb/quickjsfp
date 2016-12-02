@@ -1830,7 +1830,7 @@ function checkMatches(context, ms){
         iscpat = patIsCP(p);
       else if(iscpat != patIsCP(p)){
         throw 'patterns and copatterns shouldn\'t be mixed'
-      }else if(patIsCP(p)){
+      }else if(patIsCP(p) && p.observer.constructor != DontCare){
 
         var obsv = context[p.observer.text];
 
@@ -1839,24 +1839,22 @@ function checkMatches(context, ms){
           || /^qjf\$codata\$/.test(obsv())!=true
           ){
           throw 'codata constructor '+p.observer.text+' doesn\'t exist in the context'
-        }
-
-        if(  current_codatacnstr == null 
-          && ms[i].pat.observer.constructor != DontCare
-          ){
+        }else if(  current_codatacnstr == null){
           
           current_codatacnstr = obsv();
-        }else if(codatacnstr != context[ms[i].pat.observer.text]()){
+        }else if(codatacnstr != obsv()){
           throw 'observers from different codata shouldn\'t be mixed'
+        }else{
+          throw 'missed case in recForCPat'
         }
       }else{
-        //p is not copattern
+        //p is not copattern or p is copattern but is DontCare
       }
     }//finish checking each match with current cpat_depth
 
     if(iscpat==true){
       if(current_codatacnstr==null)
-        throw 'impossible case in recForCPat'
+        throw 'cannot determine codata constructor'
       codatacnstr.push(current_codatacnstr);
       recForCPat(cpat_depth+1);
       //check for deeper copattern level
@@ -1950,6 +1948,7 @@ function codata(decstr){
 
   //execute observer w/o giving input will return the codata constructor
   function makeObsvrFunc(obsvrN, cnstr){
+    checkType(obsvrN, String, 'obsvrN', 'makeObsvrFunc');
     return function(x){
       if(typeof(x)=='undefined')
         return cnstr;
@@ -1958,7 +1957,9 @@ function codata(decstr){
     }
   }
 
-  function splitMatches(mtcs){ //Matches -> {obsvr : Matches}
+  function splitMatches(mtcs){ //SafeMatches -> {obsvr : SafeMatches}
+    checkType(mtcs, SafeMatches, 'mtcs', 'splitMatches');
+
     var res = {};
     obsvrList.forEach(function(on){ res[on] = []; });
 
