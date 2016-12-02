@@ -1872,8 +1872,8 @@ function checkMatches(context, ms){
 }
 
 
-//Matches is safe(checked) CPattern or [IPatterns]
-function SafeMatches(context, d, matches, originalPatterns, value){
+//Matches are safe(checked) CPattern or [IPatterns]
+function SafeMatches(context, d, matches, originalPatterns){
   checkType(context, [Object, Window], 'context', 'SafeMatches');
   checkArrayType(matches, Match, 'matches', 'SafeMatches');
   checkArrayType(originalPatterns, String, 'originalPatterns', 'SafeMatches');
@@ -1888,7 +1888,7 @@ function SafeMatches(context, d, matches, originalPatterns, value){
 
 
 //value is only needed when it's working on coinduction
-function makeMatches(self,d,pat_cb_args,value){
+function makeMatches(self,d,pat_cb_args){
   if(pat_cb_args.length<2 || pat_cb_args.length%2!=0)
     throw "makeMatches: wrong pat_cb_args length which should be in even number and at least 2."
   for(var x = 0;x<pat_cb_args.length/2;x++){
@@ -1902,7 +1902,7 @@ function makeMatches(self,d,pat_cb_args,value){
     pats.push(pat_cb_args[x*2]);
     res.push(new Match(self,pat_cb_args[x*2],pat_cb_args[x*2+1]));
   }
-  return new Matches(self,d,res,pats,value);
+  return new Matches(self,d,res,pats);
 }
 
 
