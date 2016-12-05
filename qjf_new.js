@@ -1359,6 +1359,13 @@ allparsers = /*
 
 
 
+
+
+
+
+
+
+
 //------- Q.J.F. API
 // module,exporting,record,open,data,codata,func,REC,cases; literal expression
 
@@ -1756,37 +1763,35 @@ function makeIPatsMatch(self, ipats, d){
 }
 
 // no matter how many patterns in patsrc, it'll be parsed into an array
-function Match(self, patsrc, callback){
-  checkType(patsrc, String, 'patsrc', 'Match');
-  checkType(callback, [String, Function], 'callback', 'Match');
-  try{
-    var pat = allparsers.parse(patsrc.trim(), {startRule: 'WholePattern'});
+function Match(self, patsrc, callback, opt_update_for_split){
 
-    this.pat = pat.wholepattern;
-    this.callback = callback;
-    this.isCopattern = pat.wholepattern.constructor === CPattern;
-    this.context = self;
-  }catch(e){
-    throw 'Match:'+e;
-  }
-}
+  if(typeof(opt_update_for_split)=='undefined'){
+    checkType(patsrc, String, 'patsrc', 'Match');
+    checkType(callback, [String, Function], 'callback', 'Match');
+  
+    try{
+      var pat = allparsers.parse(patsrc.trim(), {startRule: 'WholePattern'});
 
-function matchData(match, d){
-
-  checkType(match, Match, 'match', 'matchData');
-  checkValue(match.isCopattern, false, 'match.isCopattern', 'matchData');
-
-  var matchResult = makeIPatsMatch(match.context, match.pat, d);
-  if(matchResult.constructor === Array){
-    //match success
-    if(callback.constructor === Function)
-      return [true, match.callback.apply(match.context, matchResult)];
-    else
-      return [true, eval('('+match.callback+')')];
+      this.pat = pat.wholepattern;
+      this.callback = callback;
+      this.isCopattern = pat.wholepattern.constructor === CPattern;
+      this.context = self;
+    }catch(e){
+      throw 'Match:'+e;
+    }
   }else{
-    return [false, null]
+    checkType(opt_update_for_split, Match, 'opt_update_for_split', 'Match');
+    var old_m = opt_update_for_split;
+    checkType(old_m.pat, CPattern, 'old_m.pat', 'Match');
+
+    this.pat = old_m.pat.innerPattern;
+    this.isCopattern = this.pat.constructor === CPattern;
+    this.callback = old_m.callback;
+    this.context = old_m.context;
   }
 }
+
+
 
 //expect context to be given `this`
 function checkMatches(context, ms){
@@ -1873,21 +1878,94 @@ function checkMatches(context, ms){
 
 
 //Matches are safe(checked) CPattern or [IPatterns]
-function SafeMatches(context, d, matches, originalPatterns){
-  checkType(context, [Object, Window], 'context', 'SafeMatches');
-  checkArrayType(matches, Match, 'matches', 'SafeMatches');
-  checkArrayType(originalPatterns, String, 'originalPatterns', 'SafeMatches');
+function SafeMatches(context, d, matches, originalPatterns, opt_update_for_split){
 
-  this.codataConstructors = checkMatches(context, matches);
-  this.context = context;
-  this.data = d;
-  this.originalPatterns = originalPatterns;
-  this.matches = matches;
+  if(typeof(opt_update_for_split)=='undefined'){
+
+    checkType(context, [Object, Window], 'context', 'SafeMatches');
+    checkArrayType(matches, Match, 'matches', 'SafeMatches');
+    checkArrayType(originalPatterns, String, 'originalPatterns', 'SafeMatches');
+
+    this.codataConstructors = checkMatches(context, matches);
+    this.context = context;
+    this.data = d;
+    this.originalPatterns = originalPatterns;
+    this.matches = matches;
+
+  }else{
+
+    //[SafeMatches, obsvr:String]
+    checkType(opt_update_for_split[0], SafeMatches, 'opt_update_for_split[0]', 'SafeMatches');
+    checkType(opt_update_for_split[1], String, 'opt_update_for_split[1]', 'SafeMatches');
+    //make new instance according to requirments of `splitMatches`
+
+    var old_sms = opt_update_for_split[0];
+    var theobsvr = opt_update_for_split[1];
+    if(old_sms.codataConstructors.length<1)
+      throw 'bad opt in SafeMatches.(1)'
+
+    var new_matches = [];
+    for(var i=0;i<old_sms.matches.length;i++){
+      if(  old_sms.matches[i].pat.observer.constructor === DontCare
+        || old_sms.matches[i].pat.observer.text == theobsvr
+        ){
+        new_matches.push(new Match(null,null,null,old_sms.matches[i]));
+      }
+    }
+    
+    if(new_matches.length==0)
+      console.log('Warning: no matches for observer: '+theobsvr);
+
+    this.codataConstructors = old_sms.codataConstructors.slice(1);
+    this.context = old_sms.context;
+    this.data = old_sms.data;
+    this.originalPatterns = old_sms.originalPatterns;
+    this.matches = new_matches;
+  }
 }
 
 function splitMatches(mtcs){ //SafeMatches -> {obsvr : SafeMatches}
   checkType(mtcs, SafeMatches, 'mtcs', 'splitMatches');
+  if(mtcs.codataConstructors.length == 0)
+    return false;
+  else{
+    var res = {};
+    var obsvrList = Object.keys(mtcs.codataConstructors[0]());
+    for(var i=0;i<obsvrList;i++){
+      res[obsvrList[i]] = new SafeMatches(null,null,null,null,[mtcs , obsvrList[i]]);
+    }
+    return res;
+  }
+}
 
+function matchData(match, d){
+
+  checkType(match, Match, 'match', 'matchData');
+  checkValue(match.isCopattern, false, 'match.isCopattern', 'matchData');
+
+  var matchResult = makeIPatsMatch(match.context, match.pat, d);
+  if(matchResult.constructor === Array){
+    //match success
+    if(callback.constructor === Function)
+      return [true, match.callback.apply(match.context, matchResult)];
+    else
+      return [true, eval('('+match.callback+')')];
+  }else{
+    return [false, null]
+  }
+}
+
+function executeMatches(mtcs){
+  checkType(mtcs, SafeMatches, 'mtcs', 'executeMatches');
+  checkValue(mtcs.codataConstructors.length, 0, 'mtcs.codataConstructors.length', 'executeMatches');
+
+  var temp = null;
+  for(var i=0;i<mtcs.matches.length;i++){
+    temp = matchData(mtcs.matches[i], mtcs.data);
+    if(temp[0])
+      return temp[1]
+  }
+  throw 'no pattern matched:\n\t'+mtcs.originalPatterns.join('\n\t')
 }
 
 
@@ -1916,28 +1994,46 @@ function makeMatches(self,d,pat_cb_args){
 //brings two objects in: coinductions that make codatas, observer functions
 // creates codata constructor and observers
 // codata constructor: qjf$codata$CodataName
-// observer: qjf$obsvr$CodataName$
 //meta programming example:
-  // function qjf$codata$Stream(d,obsvr_matches){
-  //   checkType(obsvr_matches, Object, 'obsvr_matches', 'qjf$codata$Stream');
-  //   for(var k in obsvr_matches){
-  //     checkArrayType(obsvr_matches[k], Match, 'obsvr_matches['+k+']', 'qjf$codata$Stream');
+  // function qjf$codata$Stream(matches){
+  //   //If the constructor is used as a function (without giving any input), 
+  //   // return observers table.
+  //   var obsvrs = null;
+  //   if(typeof(matches)=='undefined'){
+  //     if(obsvrs != null)
+  //       return obsvrs;
+  //     obsvrs = {};
+  //     obsvrList.forEach(function(on){
+  //       obsvrs[on] = makeObsvrFunc(on,qjf$codata$Stream);
+  //     });
+  //     return obsvrs;
   //   }
-  //   //generate matching function for each observer
-  //   for(var k in obsvr_matches){
 
-  //     this.qjf$obsvr$Stream$head = (function(k){
-  //       function(){
-  //         var res;
-  //         for(var i=0;i<obsvr_matches[k].length;i++){
-  //           res = obsvr_matches[k][i].matchData(d);
-  //           if(res[0])
-  //             return res[1];
+  //   //used as a constructor
+  //   checkType(matches, SafeMatches, 'matches', 'qjf$codata$Stream');
+  //   if(matches.codataConstructors.length <1)
+  //     throw 'Constructing qjf$codata$Stream: the input is not a copattern'
+
+  //   //splitting the matches
+  //   var split = splitMatches(matches);
+  //   if(split == false)
+  //     throw 'error that should be catched above'
+
+  //   obsvrList.forEach(function(on){
+  //     this[on] = (function(on){
+  //       return function(){
+  //         if(split[on].codataConstructors.length == 0){
+  //           //yielding a value when being observed
+  //           return executeMatches(split[on]);
+  //         }else{
+  //           //it's another copattern inside...
+  //           return new (split[on].codataConstructors[0])(split[on]);
   //         }
   //       }
-  //     })(k);
-  //   }
+  //     })(on);
+  //   });
   // }
+
 
 
 function codata(decstr){
@@ -1963,108 +2059,46 @@ function codata(decstr){
     }
   }
 
-  function splitMatches(mtcs){ //SafeMatches -> {obsvr : SafeMatches}
-    checkType(mtcs, SafeMatches, 'mtcs', 'splitMatches');
-
-    var res = {};
-    obsvrList.forEach(function(on){ res[on] = []; });
-
-    for(var i=0;i<mtcs.matches.length;i++){
-      checkType(mtcs.matches[i].pat, CPattern, 'mtcs.matches['+i+']','splitMatches');
-      switch(mtcs.matches[i].pat.observer.constructor){
-        case DontCare:
-          obsvrList.forEach(function(on){
-            res[on].push(openCPattern(mtcs.matches[i],1));
-          });
-          break;
-        case Name:
-          var x = obsvrList.indexOf(mtcs.matches[i].pat.text);
-          if( x === -1){
-            throw 'splitMatches: exists observer('+
-                  mtcs.matches[i].pat.text+') that doesn\'t belong to '+codataName;
-          }
-          res[obsvrList[x]].push(openCPattern(mtcs.matches[i],1));
-          break;
-        default:
-          throw 'splitMatches: impossible case has been reached'
-      }
-    }
-    for(var k in res){
-      if(mtcs.value == null)
-        res[k] = new Matches(mtcs.self, mtcs.data, res[k], mtcs.originalPatterns);
-      else
-        res[k] = new Matches(mtcs.self, mtcs.data, res[k], mtcs.originalPatterns, mtcs.value);
-    }
-    return res;
-  }
-
-
-  var codatacnstr = {};
-    function qjf$codata$Stream(matches){
-      //If the constructor is used as a function (without giving any iniput), 
+  var codatacnstr = eval("("+
+    "function "+cnstrName+"(matches){\n"+
+      //If the constructor is used as a function (without giving any input), 
       // return observers table.
-      var obsvrs = null;
-      if(typeof(matches)=='undefined'){
-        if(obsvrs != null)
-          return obsvrs;
-        obsvrs = {};
-        obsvrList.forEach(function(on){
-          obsvrs[on] = makeObsvrFunc(on,eval(cnstrName));
-        });
-        return obsvrs;
-      }
+    "  var obsvrs = null;\n"+
+    "  if(typeof(matches)=='undefined'){\n"+
+    "    if(obsvrs != null)\n"+
+    "      return obsvrs;\n"+
+    "    obsvrs = {};\n"+
+    "    obsvrList.forEach(function(on){\n"+
+    "      obsvrs[on] = makeObsvrFunc(on,"+cnstrName+");\n"+
+    "    });\n"+
+    "    return obsvrs;\n"+
+    "  }\n"+
 
-      checkType(matches, Matches, 'matches', cnstrName);
-      if(matches.patternType != 'copattern')
-        throw cnstrName+': input matches are not copatterns'
+      //used as a constructor
+    "  checkType(matches, SafeMatches, 'matches', '"+cnstrName+"');\n"+
+    "  if(matches.codataConstructors.length <1)\n"+
+    "    throw 'Constructing "+cnstrName+": the input is not a copattern'\n"+
 
       //splitting the matches
-      var split = splitMatches(matches);
+    "  var split = splitMatches(matches);\n"+
+    "  if(split == false)\n"+
+    "    throw 'error that should be catched above'\n"+
 
-      obsvrList.forEach(function(on){
-        if(typeof(split[on])=='undefined')
-          console.log('Warning: no case for the observer: '+on);
-        else{
-          this[on] = (function(){
-            return function(){
-              if(split[on].patternType == 'copattern'){
-              }else{
-                return split[on].yield();
-              }
-            }
-          })(on);
-        }
-      });
-    }
-  // var codatacnstr = //obsvr_matches ex: {obsvr1 : matches,...}
-  //   eval("(\n"+
-  //   "function qjf$codata$"+prs.name.text+"(d,obsvr_matches){\n"+
-  //   "  checkType(obsvr_matches, Object, 'obsvr_matches', 'qjf$codata$"+prs.name.text+"');\n"+
-  //   "  for(var k in obsvr_matches){\n"+
-  //   "    checkArrayType( obsvr_matches[k]\n"+
-  //   "                  , Match\n"+
-  //   "                  , 'obsvr_matches['+k+']'\n"+
-  //   "                  , 'qjf$codata$"+prs.name.text+"');\n"+
-  //   "  }\n"+
-  //     //generate matching function for each observer
-     
-  //   "  for(var k in obsvr_matches){\n"+
-
-  //   "    this['qjf$obsvr$"+prs.name.text+"$'+k] = (function(k){\n"+
-  //   "      return function(){\n"+
-  //   "            var res;\n"+
-  //   "            for(var i=0;i<obsvr_matches[k].length;i++){\n"+
-  //   "              res = obsvr_matches[k][i].matchData(d);\n"+
-  //   "              if(res[0])\n"+
-  //   "                return res[1];\n"+
-  //   "            }\n"+
-  //   "      }\n"+
-  //   "    })(k);\n"+
-  //   "  }\n"+
-     
-  //   "}\n"+
-  //   ")")
-  
+    "  obsvrList.forEach(function(on){\n"+
+    "    this[on] = (function(on){\n"+
+    "      return function(){\n"+
+    "        if(split[on].codataConstructors.length == 0){\n"+
+              //yielding a value when being observed
+    "          return executeMatches(split[on]);\n"+
+    "        }else{\n"+
+              //it's another copattern inside...
+    "          return new (split[on].codataConstructors[0])(split[on]);\n"+
+    "        }\n"+
+    "      }\n"+
+    "    })(on);\n"+
+    "  });\n"+
+    "}"+
+    ")");
 
 
   return { typename: prs.name.text
