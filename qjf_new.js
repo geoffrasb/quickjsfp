@@ -1408,7 +1408,7 @@ function evModule(self,decstr, body){
   if(mod.params.length != body.length)
     throw 'error at evModule: declared numbers of parameter doesn\'t match to body\'s arity.'
 
-  var resmod = mod.params.length==0? body.call({}) : body.bind({});
+  var resmod = mod.params.length==0? body.call(self) : body.bind(self);
   var internalName = 'qjf$'+mod.name.text;
   self[internalName] = resmod;
   return 'var '+mod.name.text+' = this.'+internalName+';';
