@@ -1373,7 +1373,8 @@ allparsers = /*
 // Without type checking, `module` just return a normal javascript object,
 //  returned by `body`.
 // `module` will change the context of `body`
-function module(decstr, body){
+function module(context,decstr, body){
+  checkType(context, [Object, Window], 'context', 'module');
   var mod = allparsers.parse(decstr.trim(), {startRule : 'ModuleDecl'});
   checkType(mod.name , Name, 'mod.name', 'module');
   checkArrayType(mod.params, Type, 'mod.params', 'module');
@@ -1387,9 +1388,9 @@ function module(decstr, body){
   // otherwise just returns the evaluating result of the body.
   // This is different from module system of agda.
   if(params.length==0){
-    return body.call({});
+    return body.call(context);
   }else{
-    return body.bind({});
+    return body.bind(context);
   }
 }
 
