@@ -1829,7 +1829,7 @@ function checkMatches(context, ms){
 
     for(var i=0;i<ms.length;i++){
 
-      p = applyNtimes(nextPat, ms[i].pat, cpat_depth;
+      p = applyNtimes(nextPat, ms[i].pat, cpat_depth);
 
       if(iscpat == null)
         iscpat = patIsCP(p);
@@ -2114,8 +2114,9 @@ function evCodata(self,decstr){
   var cd = codata(decstr);
   var res = "";
   self[cd.codatacnstr.name] = cd.codatacnstr;
-  for(var k in cd.obsvrs){
-    self[k] = cd.obsvrs[k];
+  var obsvrs = cd.codatacnstr();
+  for(var k in obsvrs){
+    self[k] = obsvrs[k];
     res += "var "+k+" = this."+k+";\n";
   }
   return res;
