@@ -2219,7 +2219,7 @@ function func(self,type,args){
   var ptype = allparsers.parse(type, {startRule : 'Type'});
   var arity = countArity(ptype);
 
-  return eval(
+  return eval( 
     "(function(oriArgs){"+
     "  return function("+genVars(arity).join(',')+"){\n"+
     "    checkValue(arguments.length, "+arity+",'arugments.length', 'func')\n"+

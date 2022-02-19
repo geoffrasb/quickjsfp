@@ -69,6 +69,11 @@ function zip(arrs){ // arrays
   }
   return res;
 }
+function assoc2table(assoc){ //assoc : [[k,v], [k,v] ...]
+  var t = {};
+  assoc.map(function(x){ t[x[0]]=x[1]; });
+  return t;
+}
 
 function FPModule(table){ //table is an object
   var exp = [];
@@ -77,7 +82,8 @@ function FPModule(table){ //table is an object
     exp.push(k);
     self[k] = table[k];
   })
-  this['_exported'] = function(){return exp;}
+  this['_exported'] = exp;
+  Object.freeze(this);
 }
 
 function FPIndType(typename, cnstrgetter, fold){  // cnstrgetter :: () -> [cnstr], fold is the fold for the inductive type
@@ -112,8 +118,7 @@ function FPRecord(recname, fieldnames){ // fieldnames :: [str]
 }
 FPRecord.prototype['genJSfunc'] = function(){
   var f = curryfree(eval("(function("+genVars(this.field_names.length)+"){" +
-    "var t = {};" +
-    "
+    "var t = assoc2table(zip(this.field_names, args2array(arguments)));" +
     "return new FPModule(t);})"));
   f.constructor = FPRecord;
   return f;
@@ -124,9 +129,10 @@ FPRecord.prototype['genJSfunc'] = function(){
 
 
 function mergeModules(modules){ // if exists repeated variables, take the value of the last one
+  //modules :: [FPModule]
   var res = {};
   for(var i in modules){
-    modules[i]._exported()
+    modules[i]._exported.map(function(x){res[x] = modules[i][x]});
   }
   return (new Module(res));
 }
@@ -142,7 +148,7 @@ function alterCtx(ctxs,f){
     }
   }
   fstr += "return ("+f.toString()+");})()"
-  return eval(fstr);
+  return eval(fstr); // deprecated
 }
 
 
@@ -154,12 +160,20 @@ function alterCtx2(ctx, f){ // no eval
 
 function exporting(/*args*/){
   // args are type names, module names, record names
-  var expargs = [];
-  for(var i in arguments){
-    expargs.push(arguments[i]);
-  }
+  var expmods = args2array(arguments).map(function(x){
+    switch(x.constructor){
+        case FPModule:
+          return x;
+        case FPIndType:
+          return x.constructors
+        case FPRecord:
+        default:
+          console.log('error at exporting');
+      }
+  });
   return function(expobj){
     for(var i in expargs){
+      
       if(typeof(expargs[i]['_exported']) != 'undefined'){ //expargs[i] is a module
         // adding exported fields of the module to the incoming expobj
         expargs[i]._exported.forEach(function(exportedThing){

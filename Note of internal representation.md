@@ -66,9 +66,9 @@ in the module to the current scope.
 
 example:
 
-    eval(evOpen(ListUtils, 'fold, map, Cons as c, Nil as n, -reverse'))
+    eval(evOpen('ListUtils', 'fold, map, Cons as c, Nil as n, -reverse'))
     ≡
-    eval(evOpen(ListUtils, ['fold', 'map', ['Cons','c'], ['Nil','c']]))
+    eval(evOpen('ListUtils', ['fold', 'map', ['Cons','c'], ['Nil','c']]))
     ≡
     eval('var fold = ListUtils.fold; ...; var c = ListUtils.Cons;')
 
@@ -93,7 +93,7 @@ example:
 
 ### Declaration
 
-`eval(evRecord('RecordName [params] = {f1 : Type1, f2 : Type2 ...} '))`
+`eval(evRecord('RecordName [params] = (?Name) {f1 : Type1, f2 : Type2 ...} '))`
 
 There's also a version `record`.
 
@@ -101,6 +101,12 @@ There's also a version `record`.
 
 The delcaration defines a function `RecordName : Type1 -> Type2 ... -> RecordName`.
 Or use javascript object instead: `{f1 : ..., f2 : ...} : RecordName`
+
+
+ways of making a record instance:
+
+  1. using the constructor
+  2. using js object
 
 examples:
 
@@ -280,7 +286,7 @@ DataDecl   := Name ':' Type '=' list('|', Name : Type )
 CodataDecl := RecordDecl
 RecordDecl := NameType '=' RecordTypeDecl
 
-RecordTypeDecl := '{' list(',', Name +(':' Type)) '}'
+RecordTypeDecl := '{' list(',', Name ':' Type) '}'
 
 
 Param  :=  '{' Name ':' Type '}'
@@ -289,7 +295,7 @@ Param  :=  '{' Name ':' Type '}'
 
 WholePattern := Patterns | CPattern
 
-Patterns := list(' ', APattern)
+Patterns := list(' ', IPattern)
 
 IPattern := '_'
          | Name                           (including variables and constructors)
